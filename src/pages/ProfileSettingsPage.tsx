@@ -130,9 +130,10 @@ export function ProfileSettingsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Profile & Study Settings</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">
+      <div className="eq-hero-surface rounded-2xl p-6 space-y-1">
+        <p className="text-xs font-medium text-[#22D3EE]">Workspace Configuration</p>
+        <h1 className="font-display text-2xl font-bold text-[#F8FAFC]">Profile & Study Settings</h1>
+        <p className="text-sm text-[#94A3B8]">
           Configure your learner profile, explanation style, daily goal, subjects, and runtime
           status.
         </p>
@@ -144,25 +145,25 @@ export function ProfileSettingsPage() {
           e.preventDefault();
           saveMut.mutate();
         }}
-        className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-4"
+        className="eq-card rounded-2xl p-6 space-y-5"
       >
-        <h2 className="font-display text-base font-semibold">Learner Preferences</h2>
+        <h2 className="font-display text-base font-semibold text-[#F8FAFC]">Learner Preferences</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs text-[#94A3B8]">Full Name</label>
+            <label className="text-xs font-medium text-[#94A3B8]">Full Name</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2 text-sm text-[#F8FAFC]"
+              className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-[#94A3B8]">Education Level</label>
+            <label className="text-xs font-medium text-[#94A3B8]">Education Level</label>
             <select
               value={educationLevel}
               onChange={(e) => setEducationLevel(e.target.value as Profile['education_level'])}
-              className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2 text-sm text-[#F8FAFC]"
+              className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
             >
               <option value="school">School</option>
               <option value="undergraduate">Undergraduate</option>
@@ -172,29 +173,29 @@ export function ProfileSettingsPage() {
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-[#94A3B8]">Course / Program</label>
+            <label className="text-xs font-medium text-[#94A3B8]">Course / Program</label>
             <input
               type="text"
               value={course}
               onChange={(e) => setCourse(e.target.value)}
-              className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2 text-sm text-[#F8FAFC]"
+              className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-[#94A3B8]">Timezone (IANA)</label>
+            <label className="text-xs font-medium text-[#94A3B8]">Timezone (IANA)</label>
             <input
               type="text"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2 text-sm text-[#F8FAFC]"
+              className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-[#94A3B8]">Tutor Explanation Style</label>
+            <label className="text-xs font-medium text-[#94A3B8]">Tutor Explanation Style</label>
             <select
               value={style}
               onChange={(e) => setStyle(e.target.value as UserPreferences['explanation_style'])}
-              className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2 text-sm text-[#F8FAFC]"
+              className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
             >
               <option value="step_by_step">Step by Step</option>
               <option value="beginner">Beginner</option>
@@ -204,22 +205,22 @@ export function ProfileSettingsPage() {
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-[#94A3B8]">Daily Goal (minutes)</label>
+            <label className="text-xs font-medium text-[#94A3B8]">Daily Goal (minutes)</label>
             <input
               type="number"
               min={5}
               max={240}
               value={dailyGoal}
               onChange={(e) => setDailyGoal(Number(e.target.value))}
-              className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2 text-sm text-[#F8FAFC] tabular-nums"
+              className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] tabular-nums focus:outline-none focus:border-[#22D3EE]"
             />
           </div>
         </div>
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end pt-2 border-t border-slate-400/15">
           <button
             type="submit"
             disabled={saveMut.isPending}
-            className="px-5 py-2 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold"
+            className="px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold transition-colors whitespace-nowrap"
           >
             {saveMut.isPending ? 'Saving...' : 'Save Preferences'}
           </button>
@@ -227,60 +228,69 @@ export function ProfileSettingsPage() {
       </form>
 
       {/* Subjects Manager */}
-      <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-4">
-        <h2 className="font-display text-base font-semibold">Study Subjects</h2>
-        <div className="flex gap-2">
+      <div className="eq-card rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-base font-semibold text-[#F8FAFC]">Study Subjects</h2>
+          <span className="text-xs text-[#94A3B8] tabular-nums">
+            {(data?.subjects || []).length} configured
+          </span>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={newSubject}
             onChange={(e) => setNewSubject(e.target.value)}
             placeholder="Add subject (e.g. Algorithms)"
-            className="flex-1 bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2 text-sm text-[#F8FAFC]"
+            className="flex-1 bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
           />
           <button
             type="button"
             onClick={() => newSubject.trim() && addSubjMut.mutate()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#22D3EE] text-[#0B1020] text-xs font-bold"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#22D3EE] hover:bg-[#06B6D4] text-[#0B1020] text-xs font-bold transition-colors whitespace-nowrap shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            Add
+            Add Subject
           </button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {(data?.subjects || []).map((s) => (
-            <div
-              key={s.id}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#11182B] border border-slate-400/20 text-xs"
-            >
-              <span>{s.name}</span>
-              <button
-                type="button"
-                onClick={() => delSubjMut.mutate(s.id)}
-                className="text-[#94A3B8] hover:text-[#EF4444]"
-                aria-label={`Remove ${s.name}`}
+        {(data?.subjects || []).length === 0 ? (
+          <p className="text-xs text-[#94A3B8]">No subjects added yet. Add a subject to organize uploads.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(data?.subjects || []).map((s) => (
+              <div
+                key={s.id}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#11182B] border border-slate-400/20 text-xs text-[#F8FAFC]"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
+                <span>{s.name}</span>
+                <button
+                  type="button"
+                  onClick={() => delSubjMut.mutate(s.id)}
+                  className="text-[#94A3B8] hover:text-[#EF4444] transition-colors"
+                  aria-label={`Remove ${s.name}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Runtime & AI Engine Status (Honest Layer A/B reporting) */}
-      <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-3">
-        <h2 className="font-display text-base font-semibold flex items-center gap-2">
+      <div className="eq-card rounded-2xl p-6 space-y-3.5">
+        <h2 className="font-display text-base font-semibold flex items-center gap-2 text-[#F8FAFC]">
           <Server className="w-4 h-4 text-[#22D3EE]" />
           Runtime & AI Provider Status
         </h2>
         <div className="grid sm:grid-cols-2 gap-3 text-xs">
-          <div className="p-3 rounded-xl bg-[#11182B] border border-slate-400/15 flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/15 flex items-center justify-between gap-2">
             <span className="text-[#94A3B8]">Active AI Mode</span>
-            <span className="font-semibold text-[#22C55E] inline-flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
+            <span className="font-semibold text-[#22C55E] inline-flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               {health?.ai_mode === 'rule_based' ? 'Rule-Based Engine (Local)' : health?.ai_mode || 'rule_based'}
             </span>
           </div>
-          <div className="p-3 rounded-xl bg-[#11182B] border border-slate-400/15 flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/15 flex items-center justify-between gap-2">
             <span className="text-[#94A3B8]">Database & Disk Storage</span>
             <span className="font-semibold text-[#22C55E]">
               {health?.database && health?.storage ? 'SQLite + Local Disk Ready' : 'Checking...'}
@@ -290,10 +300,10 @@ export function ProfileSettingsPage() {
       </div>
 
       {/* Account Deletion */}
-      <div className="bg-[#151E33] border border-[#EF4444]/30 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="eq-card border-[#EF4444]/30 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-display text-base font-semibold text-[#EF4444]">Account Lifecycle</h2>
-          <p className="text-xs text-[#94A3B8] mt-1">
+          <p className="text-xs text-[#94A3B8] mt-1 leading-relaxed">
             {data?.profile.deletion_requested_at
               ? `Deletion scheduled on ${new Date(data.profile.deletion_requested_at).toLocaleDateString()} (7-day grace period active).`
               : 'Request account deletion with a 7-day reversible grace period.'}
@@ -303,7 +313,7 @@ export function ProfileSettingsPage() {
           <button
             type="button"
             onClick={() => cancelDeleteMut.mutate()}
-            className="px-4 py-2 rounded-lg bg-[#22C55E] text-[#0B1020] text-xs font-bold shrink-0"
+            className="px-4 py-2.5 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] text-[#0B1020] text-xs font-bold transition-colors whitespace-nowrap shrink-0"
           >
             Cancel Scheduled Deletion
           </button>
@@ -311,7 +321,7 @@ export function ProfileSettingsPage() {
           <button
             type="button"
             onClick={() => scheduleDeleteMut.mutate()}
-            className="px-4 py-2 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/40 text-xs font-semibold text-[#EF4444] shrink-0"
+            className="px-4 py-2.5 rounded-xl bg-[#EF4444]/15 hover:bg-[#EF4444]/25 border border-[#EF4444]/40 text-xs font-semibold text-[#EF4444] transition-colors whitespace-nowrap shrink-0"
           >
             Schedule Account Deletion
           </button>

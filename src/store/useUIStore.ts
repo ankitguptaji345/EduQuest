@@ -9,6 +9,8 @@ export interface ToastItem {
 interface UIState {
   mobileNavOpen: boolean;
   setMobileNavOpen: (open: boolean) => void;
+  sidebarCollapsed: boolean;
+  toggleSidebarCollapsed: () => void;
   toasts: ToastItem[];
   addToast: (type: ToastItem['type'], message: string) => void;
   removeToast: (id: string) => void;
@@ -17,6 +19,8 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   mobileNavOpen: false,
   setMobileNavOpen: (mobileNavOpen) => set({ mobileNavOpen }),
+  sidebarCollapsed: false,
+  toggleSidebarCollapsed: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   toasts: [],
   addToast: (type, message) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;

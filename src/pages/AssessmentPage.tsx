@@ -37,13 +37,15 @@ interface AssessmentDetailResponse {
   }>;
 }
 
+const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
 export function AssessmentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const addToast = useUIStore((s) => s.addToast);
 
-  // Launcher state when /assessments (no id)
+  // Launcher state
   const [selectedDocId, setSelectedDocId] = useState('');
   const [kind, setKind] = useState<'diagnostic' | 'practice'>('diagnostic');
   const [questionCount, setQuestionCount] = useState(5);
@@ -179,79 +181,103 @@ export function AssessmentPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Diagnostic & Practice Quizzes</h1>
           <p className="text-sm text-[#94A3B8] mt-1">
-            Questions are generated strictly from your processed study documents with zero exposed
-            answer keys and automatic misconception diagnosis.
+            Questions are generated directly from your processed study documents with server-side answer
+            verification and automatic misconception diagnosis.
           </p>
         </div>
 
-        <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-5">
-          <h2 className="font-display text-lg font-semibold">Launch New Quiz</h2>
+        <div className="eq-card rounded-2xl p-6 space-y-6">
+          <h2 className="font-display text-lg font-semibold">Configure Assessment</h2>
           {docs.length === 0 ? (
-            <div className="text-sm text-[#94A3B8] space-y-3">
-              <p>Upload and process at least one study document before starting a quiz.</p>
+            <div className="p-6 rounded-xl bg-[#11182B] border border-slate-400/15 text-center space-y-3">
+              <p className="text-sm text-[#94A3B8]">
+                Upload and process at least one study document before starting a quiz.
+              </p>
               <Link
                 to="/upload"
-                className="inline-block px-4 py-2 rounded-lg bg-[#8B5CF6] text-white text-xs font-semibold"
+                className="inline-block px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold transition-colors"
               >
                 Upload Study Material
               </Link>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#94A3B8]">Source Material</label>
-                <select
-                  value={selectedDocId}
-                  onChange={(e) => setSelectedDocId(e.target.value)}
-                  className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3 py-2.5 text-sm text-[#F8FAFC]"
-                >
-                  <option value="">All Processed Materials</option>
-                  {docs.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.title}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-5">
+              {/* Kind Selector Cards */}
+              <div className="grid sm:grid-cols-2 gap-3">
+                {[
+                  {
+                    value: 'diagnostic' as const,
+                    title: 'Diagnostic Assessment',
+                    desc: 'Broad sweep across extracted topics to detect weak spots and misconceptions.',
+                  },
+                  {
+                    value: 'practice' as const,
+                    title: 'Targeted Practice',
+                    desc: 'Focused mastery check reinforcing key definitions and examples.',
+                  },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setKind(opt.value)}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                      kind === opt.value
+                        ? 'bg-[#8B5CF6]/15 border-[#8B5CF6] text-[#F8FAFC]'
+                        : 'bg-[#11182B] border-slate-400/15 text-[#94A3B8] hover:border-slate-400/35'
+                    }`}
+                  >
+                    <p className="font-display text-sm font-semibold text-[#F8FAFC]">{opt.title}</p>
+                    <p className="text-xs text-[#94A3B8] mt-1">{opt.desc}</p>
+                  </button>
+                ))}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#94A3B8]">Assessment Type</label>
-                <select
-                  value={kind}
-                  onChange={(e) => setKind(e.target.value as 'diagnostic' | 'practice')}
-                  className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3 py-2.5 text-sm text-[#F8FAFC]"
-                >
-                  <option value="diagnostic">Diagnostic Assessment</option>
-                  <option value="practice">Targeted Practice</option>
-                </select>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#94A3B8]">Source Material</label>
+                  <select
+                    value={selectedDocId}
+                    onChange={(e) => setSelectedDocId(e.target.value)}
+                    className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC]"
+                  >
+                    <option value="">All Processed Materials</option>
+                    {docs.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#94A3B8]">Question Count</label>
+                  <select
+                    value={questionCount}
+                    onChange={(e) => setQuestionCount(Number(e.target.value))}
+                    className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC]"
+                  >
+                    <option value={3}>3 Questions</option>
+                    <option value={5}>5 Questions</option>
+                    <option value={8}>8 Questions</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#94A3B8]">Questions</label>
-                <select
-                  value={questionCount}
-                  onChange={(e) => setQuestionCount(Number(e.target.value))}
-                  className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3 py-2.5 text-sm text-[#F8FAFC]"
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => createMut.mutate()}
+                  disabled={createMut.isPending}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-sm font-semibold transition-colors"
                 >
-                  <option value={3}>3 Questions</option>
-                  <option value={5}>5 Questions</option>
-                  <option value={8}>8 Questions</option>
-                </select>
+                  {createMut.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Target className="w-4 h-4" />
+                  )}
+                  Generate & Start Quiz
+                </button>
               </div>
-            </div>
-          )}
-
-          {docs.length > 0 && (
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => createMut.mutate()}
-                disabled={createMut.isPending}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-sm font-semibold"
-              >
-                {createMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Target className="w-4 h-4" />}
-                Generate & Start Quiz
-              </button>
             </div>
           )}
         </div>
@@ -260,33 +286,38 @@ export function AssessmentPage() {
         <div className="space-y-3">
           <h2 className="font-display text-lg font-semibold">Assessment History</h2>
           {history.length === 0 ? (
-            <p className="text-sm text-[#94A3B8]">No assessments taken yet.</p>
+            <div className="eq-card rounded-xl p-6 text-sm text-[#94A3B8]">
+              No assessments taken yet. Launch your first diagnostic quiz above.
+            </div>
           ) : (
             <div className="grid gap-3">
-              {history.map((a) => (
-                <div
-                  key={a.id}
-                  className="bg-[#151E33] border border-slate-400/15 rounded-xl p-4 flex items-center justify-between gap-4"
-                >
-                  <div>
-                    <p className="font-medium text-sm capitalize text-[#F8FAFC]">
-                      {a.kind.replace('_', ' ')} Quiz
-                    </p>
-                    <p className="text-xs text-[#94A3B8] tabular-nums">
-                      Status: {a.status}
-                      {a.score !== null && a.max_score
-                        ? ` · Score: ${Math.round((a.score / a.max_score) * 100)}%`
-                        : ''}
-                    </p>
-                  </div>
-                  <Link
-                    to={a.status === 'evaluated' ? `/assessments/${a.id}/results` : `/assessments/${a.id}`}
-                    className="px-3.5 py-1.5 rounded-lg bg-[#11182B] border border-slate-400/20 text-xs font-medium text-[#22D3EE]"
+              {history.map((a) => {
+                const pct =
+                  a.score !== null && a.max_score ? Math.round((a.score / a.max_score) * 100) : null;
+                return (
+                  <div
+                    key={a.id}
+                    className="eq-card eq-card-hover rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
-                    {a.status === 'evaluated' ? 'View Results' : 'Resume'}
-                  </Link>
-                </div>
-              ))}
+                    <div className="space-y-1">
+                      <p className="font-display font-semibold text-sm capitalize text-[#F8FAFC]">
+                        {a.kind.replace('_', ' ')} Assessment
+                      </p>
+                      <p className="text-xs text-[#94A3B8] tabular-nums">
+                        Status: <span className="capitalize text-[#F8FAFC]">{a.status.replace('_', ' ')}</span>
+                        {pct !== null ? ` · Score: ${pct}%` : ''} · {new Date(a.started_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Link
+                      to={a.status === 'evaluated' ? `/assessments/${a.id}/results` : `/assessments/${a.id}`}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#11182B] hover:bg-[#1B2740] border border-slate-400/20 text-xs font-semibold text-[#22D3EE] transition-colors shrink-0"
+                    >
+                      {a.status === 'evaluated' ? 'View Results' : 'Resume Quiz'}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -296,18 +327,23 @@ export function AssessmentPage() {
 
   // Quiz Runner View
   if (loadingQuiz || !detail) {
-    return <div className="h-64 rounded-2xl bg-[#151E33] animate-pulse" />;
+    return (
+      <div className="max-w-3xl mx-auto space-y-4 animate-pulse">
+        <div className="h-20 rounded-xl bg-[#151E33]" />
+        <div className="h-80 rounded-2xl bg-[#151E33]" />
+      </div>
+    );
   }
 
   const { assessment, questions, answers } = detail;
   if (assessment.status === 'evaluated') {
     return (
-      <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-8 text-center space-y-4">
+      <div className="max-w-xl mx-auto eq-card rounded-2xl p-8 text-center space-y-4">
         <CheckCircle2 className="w-10 h-10 text-[#22C55E] mx-auto" />
         <h2 className="font-display text-xl font-bold">This assessment is already completed</h2>
         <Link
           to={`/assessments/${assessment.id}/results`}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#8B5CF6] text-white text-sm font-semibold"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#8B5CF6] text-white text-sm font-semibold"
         >
           View Results & Explanations
           <ArrowRight className="w-4 h-4" />
@@ -318,7 +354,9 @@ export function AssessmentPage() {
 
   const q = questions[currentIdx];
   const existingAnswer = q ? answers.find((a) => a.question_id === q.id) : undefined;
+  const answerMap = new Map(answers.map((a) => [a.question_id, a]));
   const allAnswered = questions.length > 0 && answers.length >= questions.length;
+  const progressPct = Math.round((answers.length / Math.max(1, questions.length)) * 100);
 
   const moveToQuestion = (idx: number) => {
     setCurrentIdx(idx);
@@ -332,38 +370,69 @@ export function AssessmentPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Progress Header */}
-      <div className="flex items-center justify-between bg-[#151E33] border border-slate-400/15 rounded-xl px-5 py-3.5">
-        <div className="space-y-0.5">
-          <p className="text-xs text-[#22D3EE] capitalize">{assessment.kind.replace('_', ' ')} Assessment</p>
-          <p className="text-sm font-semibold tabular-nums">
-            Question {currentIdx + 1} of {questions.length} · {answers.length} answered
-          </p>
+      {/* Progress & Timer Header */}
+      <div className="eq-card rounded-2xl p-5 space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-[#22D3EE] capitalize">
+              {assessment.kind.replace('_', ' ')} Assessment
+            </p>
+            <p className="text-sm font-semibold tabular-nums mt-0.5">
+              Question {currentIdx + 1} of {questions.length} · {answers.length} answered ({progressPct}%)
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#11182B] border border-slate-400/15 text-xs font-mono text-[#F8FAFC] tabular-nums">
+            <Clock className="w-3.5 h-3.5 text-[#22D3EE]" />
+            {String(Math.floor(elapsedSec / 60)).padStart(2, '0')}:{String(elapsedSec % 60).padStart(2, '0')}
+          </div>
         </div>
-        <div className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] tabular-nums">
-          <Clock className="w-4 h-4" />
-          {elapsedSec}s
+
+        {/* Interactive Question Navigator Bar */}
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.max(1, questions.length)}, minmax(0, 1fr))` }}>
+          {questions.map((item, idx) => {
+            const ans = answerMap.get(item.id);
+            const isCurr = idx === currentIdx;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => moveToQuestion(idx)}
+                title={`Question ${idx + 1}`}
+                className={`h-2 rounded-full transition-all ${
+                  isCurr
+                    ? 'bg-[#22D3EE]'
+                    : ans
+                      ? ans.is_correct
+                        ? 'bg-[#22C55E]'
+                        : 'bg-[#EF4444]'
+                      : 'bg-[#0B1020]'
+                }`}
+              />
+            );
+          })}
         </div>
       </div>
 
       {/* Question Card */}
       {q && (
-        <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-5">
+        <div className="eq-card rounded-2xl p-6 lg:p-7 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#94A3B8]">
-            <span className="capitalize">
-              {q.type.replace('_', ' ')} · {q.difficulty}
+            <span className="capitalize font-medium">
+              {q.type.replace('_', ' ')} · Difficulty: <strong className="text-[#F8FAFC]">{q.difficulty}</strong>
             </span>
             {q.source_refs.length > 0 && (
               <span className="text-[#22D3EE]">{q.source_refs.map((r) => r.label).join(', ')}</span>
             )}
           </div>
 
-          <h2 className="font-display text-lg font-semibold leading-snug">{q.prompt}</h2>
+          <h2 className="font-display text-lg lg:text-xl font-semibold leading-snug text-[#F8FAFC]">
+            {q.prompt}
+          </h2>
 
-          {/* Answer Input */}
+          {/* Answer Selection */}
           {q.options && q.options.length > 0 ? (
             <div className="space-y-2.5">
-              {q.options.map((opt) => {
+              {q.options.map((opt, oIdx) => {
                 const selected = (existingAnswer?.answer.value || draftAnswer) === opt;
                 return (
                   <button
@@ -371,13 +440,22 @@ export function AssessmentPage() {
                     type="button"
                     disabled={Boolean(existingAnswer) || submitAnswerMut.isPending}
                     onClick={() => setDraftAnswer(opt)}
-                    className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-colors ${
+                    className={`w-full text-left px-4 py-3.5 rounded-xl border text-sm transition-all flex items-start gap-3 ${
                       selected
-                        ? 'bg-[#8B5CF6]/20 border-[#8B5CF6] text-[#F8FAFC]'
-                        : 'bg-[#11182B] border-slate-400/20 text-[#94A3B8] hover:text-[#F8FAFC]'
+                        ? 'bg-[#8B5CF6]/20 border-[#8B5CF6] text-[#F8FAFC] shadow-sm'
+                        : 'bg-[#11182B] border-slate-400/20 text-[#94A3B8] hover:text-[#F8FAFC] hover:border-slate-400/40'
                     }`}
                   >
-                    {opt}
+                    <span
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-bold shrink-0 ${
+                        selected
+                          ? 'bg-[#8B5CF6] text-white'
+                          : 'bg-[#151E33] text-[#94A3B8] border border-slate-400/20'
+                      }`}
+                    >
+                      {OPTION_LETTERS[oIdx] || oIdx + 1}
+                    </span>
+                    <span className="leading-relaxed pt-0.5">{opt}</span>
                   </button>
                 );
               })}
@@ -393,55 +471,63 @@ export function AssessmentPage() {
             />
           )}
 
-          {/* Hints */}
+          {/* Progressive Hints */}
           {revealedHints.length > 0 && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {revealedHints.map((h, i) => (
-                <div key={i} className="p-3 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 text-xs text-[#F59E0B]">
-                  Hint {i + 1}: {h}
+                <div
+                  key={i}
+                  className="p-3.5 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/30 text-xs text-[#F59E0B] flex items-start gap-2"
+                >
+                  <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Hint {i + 1}:</strong> {h}
+                  </span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Immediate Feedback & Misconception Alert */}
+          {/* Feedback & Explanation Panel */}
           {(latestFeedback || existingAnswer) && (
             <div
-              className={`p-4 rounded-xl border space-y-2 ${
+              className={`p-4 rounded-xl border space-y-2.5 ${
                 (latestFeedback?.is_correct ?? existingAnswer?.is_correct)
-                  ? 'bg-[#22C55E]/10 border-[#22C55E]/30'
-                  : 'bg-[#EF4444]/10 border-[#EF4444]/30'
+                  ? 'bg-[#22C55E]/10 border-[#22C55E]/35'
+                  : 'bg-[#EF4444]/10 border-[#EF4444]/35'
               }`}
             >
               <div className="flex items-center gap-2 text-sm font-semibold">
                 {(latestFeedback?.is_correct ?? existingAnswer?.is_correct) ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-[#22C55E]" />
-                    <span className="text-[#22C55E]">Correct</span>
+                    <span className="text-[#22C55E]">Correct Answer</span>
                   </>
                 ) : (
                   <>
                     <XCircle className="w-4 h-4 text-[#EF4444]" />
-                    <span className="text-[#EF4444]">Incorrect</span>
+                    <span className="text-[#EF4444]">Incorrect Answer</span>
                   </>
                 )}
               </div>
-              <p className="text-xs text-[#F8FAFC]/90">
+              <p className="text-xs text-[#F8FAFC]/90 leading-relaxed">
                 {latestFeedback?.feedback || existingAnswer?.feedback}
               </p>
               {latestFeedback && (
-                <p className="text-xs text-[#94A3B8]">
-                  Expected answer: <strong className="text-[#F8FAFC]">{latestFeedback.correct_answer}</strong> ·{' '}
-                  {latestFeedback.explanation}
-                </p>
+                <div className="p-3 rounded-lg bg-[#0B1020]/60 border border-slate-400/15 text-xs space-y-1">
+                  <p className="text-[#94A3B8]">
+                    Expected: <strong className="text-[#22C55E]">{latestFeedback.correct_answer}</strong>
+                  </p>
+                  <p className="text-[#94A3B8] leading-relaxed">{latestFeedback.explanation}</p>
+                </div>
               )}
               {latestFeedback?.thread && (
-                <div className="pt-2 border-t border-slate-400/20 flex items-center justify-between gap-3 text-xs">
-                  <span className="text-[#F59E0B] inline-flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                <div className="pt-2 border-t border-slate-400/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <span className="text-[#F59E0B] inline-flex items-center gap-1.5 font-medium">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                     Misconception flagged ({latestFeedback.thread.status}): {latestFeedback.thread.label}
                   </span>
-                  <Link to="/misconceptions" className="text-[#22D3EE] hover:underline shrink-0">
+                  <Link to="/misconceptions" className="text-[#22D3EE] font-semibold hover:underline shrink-0">
                     Open Corrective Lesson
                   </Link>
                 </div>
@@ -450,28 +536,28 @@ export function AssessmentPage() {
           )}
 
           {/* Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-400/15">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-400/15">
+            <div>
               {!existingAnswer && hintsUsed < q.hints_count && (
                 <button
                   type="button"
                   onClick={() => hintMut.mutate(q.id)}
                   disabled={hintMut.isPending}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#11182B] border border-slate-400/20 text-xs text-[#F59E0B]"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#11182B] hover:bg-[#1B2740] border border-slate-400/20 text-xs font-medium text-[#F59E0B] transition-colors"
                 >
                   <HelpCircle className="w-3.5 h-3.5" />
-                  Hint ({q.hints_count - hintsUsed} left)
+                  Reveal Hint ({q.hints_count - hintsUsed} left)
                 </button>
               )}
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               {!existingAnswer ? (
                 <button
                   type="button"
                   disabled={!draftAnswer.trim() || submitAnswerMut.isPending}
                   onClick={() => submitAnswerMut.mutate(q.id)}
-                  className="px-5 py-2 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-50 text-white text-xs font-semibold"
+                  className="px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-50 text-white text-xs font-semibold transition-colors"
                 >
                   {submitAnswerMut.isPending ? 'Checking...' : 'Submit Answer'}
                 </button>
@@ -479,7 +565,7 @@ export function AssessmentPage() {
                 <button
                   type="button"
                   onClick={() => moveToQuestion(currentIdx + 1)}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[#22D3EE] text-[#0B1020] text-xs font-bold"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#22D3EE] hover:bg-[#06B6D4] text-[#0B1020] text-xs font-bold transition-colors"
                 >
                   Next Question
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -491,7 +577,7 @@ export function AssessmentPage() {
                   type="button"
                   onClick={() => completeMut.mutate()}
                   disabled={completeMut.isPending}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[#22C55E] text-[#0B1020] text-xs font-bold"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] text-[#0B1020] text-xs font-bold transition-colors"
                 >
                   {completeMut.isPending ? 'Finalizing...' : 'Finish & Claim XP'}
                 </button>

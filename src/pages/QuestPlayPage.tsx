@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'motion/react';
 import {
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
   Loader2,
   PauseCircle,
@@ -18,6 +20,53 @@ interface QuestStateResponse {
   attempt: { id: string; assessment_id: string | null; status: string } | null;
   questions: QuestionPublic[];
   answers: Array<{ question_id: string; is_correct: boolean; feedback: string }>;
+}
+
+const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
+
+function LessonContent({ markdown }: { markdown: string }) {
+  const lines = markdown.split('\n');
+  return (
+    <div className="space-y-2.5 text-sm text-[#F8FAFC]/90 leading-relaxed">
+      {lines.map((raw, idx) => {
+        const line = raw.trim();
+        if (!line) return <div key={idx} className="h-1" />;
+        if (line.startsWith('# ')) {
+          return (
+            <h2 key={idx} className="font-display text-lg font-bold text-[#F8FAFC] pt-1">
+              {line.slice(2)}
+            </h2>
+          );
+        }
+        if (line.startsWith('## ')) {
+          return (
+            <h3 key={idx} className="font-display text-sm font-semibold text-[#22D3EE] pt-2">
+              {line.slice(3)}
+            </h3>
+          );
+        }
+        if (line.startsWith('> ')) {
+          return (
+            <div
+              key={idx}
+              className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/20 text-xs text-[#94A3B8]"
+            >
+              {line.slice(2)}
+            </div>
+          );
+        }
+        if (line.startsWith('- ')) {
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1">
+              <span className="text-[#8B5CF6]">•</span>
+              <span>{line.slice(2)}</span>
+            </div>
+          );
+        }
+        return <p key={idx}>{line}</p>;
+      })}
+    </div>
+  );
 }
 
 export function QuestPlayPage() {
@@ -119,7 +168,7 @@ export function QuestPlayPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex items-center gap-2 text-sm text-[#94A3B8] py-12 justify-center">
+      <div className="flex items-center gap-2 text-sm text-[#94A3B8] py-16 justify-center">
         <Loader2 className="w-4 h-4 animate-spin text-[#22D3EE]" />
         Loading quest lesson...
       </div>
@@ -128,16 +177,18 @@ export function QuestPlayPage() {
 
   const { quest, attempt, questions, answers } = data;
   const answerMap = new Map(answers.map((a) => [a.question_id, a]));
+  const checkPct =
+    questions.length > 0 ? Math.round((answers.length / questions.length) * 100) : 0;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      <div className="eq-hero-surface rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
           <Link to="/worlds" className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-[#F8FAFC]">
             <ArrowLeft className="w-3.5 h-3.5" />
             Learning Worlds
           </Link>
-          <h1 className="font-display text-2xl font-bold mt-1">{quest.title}</h1>
+          <h1 className="font-display text-2xl font-bold">{quest.title}</h1>
           <p className="text-xs text-[#22D3EE] tabular-nums">
             {quest.kind.toUpperCase()} · Reward: +{quest.xp_reward} XP · Rule-Based Engine
           </p>
@@ -148,7 +199,7 @@ export function QuestPlayPage() {
             <button
               type="button"
               onClick={() => pauseMut.mutate()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#151E33] border border-slate-400/20 text-xs text-[#94A3B8] hover:text-[#F8FAFC]"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#11182B] hover:bg-[#1B2740] border border-slate-400/20 text-xs text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
             >
               <PauseCircle className="w-3.5 h-3.5" />
               Pause
@@ -156,7 +207,7 @@ export function QuestPlayPage() {
             <button
               type="button"
               onClick={() => abandonMut.mutate()}
-              className="px-3 py-1.5 rounded-lg bg-[#151E33] border border-slate-400/20 text-xs text-[#EF4444]"
+              className="px-3.5 py-2 rounded-xl bg-[#11182B] hover:bg-[#EF4444]/15 border border-slate-400/20 text-xs text-[#EF4444] transition-colors"
             >
               Abandon
             </button>
@@ -165,13 +216,14 @@ export function QuestPlayPage() {
       </div>
 
       {/* Lesson Content */}
-      <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-3">
-        <p className="text-xs font-semibold text-[#22D3EE]">Grounded Quest Lesson</p>
-        <div className="text-sm text-[#F8FAFC]/90 whitespace-pre-wrap leading-relaxed">
-          {quest.lesson_markdown || quest.intro}
+      <div className="eq-card rounded-2xl p-6 space-y-4">
+        <div className="flex items-center gap-2 text-xs font-semibold text-[#22D3EE] pb-2 border-b border-slate-400/15">
+          <BookOpen className="w-4 h-4" />
+          Grounded Quest Lesson
         </div>
+        <LessonContent markdown={quest.lesson_markdown || quest.intro} />
         {quest.source_refs.length > 0 && (
-          <p className="text-xs text-[#94A3B8] pt-2 border-t border-slate-400/15">
+          <p className="text-xs text-[#94A3B8] pt-3 border-t border-slate-400/15">
             Sources: {quest.source_refs.map((r) => r.label).join(', ')}
           </p>
         )}
@@ -179,67 +231,82 @@ export function QuestPlayPage() {
 
       {/* Completion Result */}
       {completionResult ? (
-        <div
-          className={`rounded-2xl border p-6 space-y-4 text-center ${
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2 }}
+          className={`rounded-2xl border p-7 space-y-4 text-center ${
             completionResult.passed
               ? 'bg-[#22C55E]/10 border-[#22C55E]/35'
               : 'bg-[#EF4444]/10 border-[#EF4444]/35'
           }`}
         >
           {completionResult.passed ? (
-            <Trophy className="w-10 h-10 text-[#22C55E] mx-auto" />
+            <Trophy className="w-11 h-11 text-[#22C55E] mx-auto" />
           ) : (
-            <XCircle className="w-10 h-10 text-[#EF4444] mx-auto" />
+            <XCircle className="w-11 h-11 text-[#EF4444] mx-auto" />
           )}
-          <h2 className="font-display text-xl font-bold">
+          <h2 className="font-display text-2xl font-bold">
             {completionResult.passed ? 'Quest Cleared!' : 'Quest Needs Retry'}
           </h2>
           <p className="text-sm text-[#F8FAFC]/90 tabular-nums">
-            Accuracy: {completionResult.accuracy_percent}% (Required: {completionResult.required_percent}%)
+            Accuracy: <strong>{completionResult.accuracy_percent}%</strong> (Required:{' '}
+            {completionResult.required_percent}%)
             {completionResult.xp_award ? ` · Earned +${completionResult.xp_award.amount} XP` : ''}
           </p>
-          <div className="flex justify-center gap-3">
+          <div className="flex justify-center gap-3 pt-1">
             <Link
               to="/worlds"
-              className="px-5 py-2.5 rounded-lg bg-[#8B5CF6] text-white text-xs font-semibold"
+              className="px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold transition-colors"
             >
               Return to World Map
             </Link>
           </div>
-        </div>
+        </motion.div>
       ) : (
         /* Quest Check Questions */
         <div className="space-y-4">
-          <h2 className="font-display text-lg font-semibold">
-            Quest Check ({answers.length}/{questions.length} answered)
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-lg font-semibold">
+              Quest Check ({answers.length}/{questions.length} answered)
+            </h2>
+            <span className="text-xs font-mono text-[#22D3EE] tabular-nums">{checkPct}%</span>
+          </div>
+          <div className="h-1.5 bg-[#151E33] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#22D3EE] transition-all duration-300"
+              style={{ width: `${checkPct}%` }}
+            />
+          </div>
+
           {questions.map((q, idx) => {
             const existing = answerMap.get(q.id);
             const draft = selectedAnswers[q.id] || '';
             return (
-              <div
-                key={q.id}
-                className="bg-[#151E33] border border-slate-400/15 rounded-xl p-5 space-y-3"
-              >
-                <p className="text-sm font-semibold">
-                  {idx + 1}. {q.prompt}
+              <div key={q.id} className="eq-card rounded-2xl p-5 space-y-3.5">
+                <p className="font-display text-sm lg:text-base font-semibold">
+                  <span className="text-[#94A3B8] mr-2 tabular-nums">Q{idx + 1}.</span>
+                  {q.prompt}
                 </p>
 
                 {q.options && q.options.length > 0 ? (
                   <div className="space-y-2">
-                    {q.options.map((opt) => (
+                    {q.options.map((opt, oIdx) => (
                       <button
                         key={opt}
                         type="button"
                         disabled={Boolean(existing)}
                         onClick={() => setSelectedAnswers((p) => ({ ...p, [q.id]: opt }))}
-                        className={`w-full text-left px-3.5 py-2.5 rounded-lg border text-xs transition-colors ${
+                        className={`w-full text-left px-3.5 py-2.5 rounded-xl border text-xs transition-all flex items-center gap-3 ${
                           draft === opt
                             ? 'bg-[#8B5CF6]/20 border-[#8B5CF6] text-[#F8FAFC]'
-                            : 'bg-[#11182B] border-slate-400/20 text-[#94A3B8]'
+                            : 'bg-[#11182B] border-slate-400/20 text-[#94A3B8] hover:text-[#F8FAFC]'
                         }`}
                       >
-                        {opt}
+                        <span className="w-5 h-5 rounded bg-[#151E33] border border-slate-400/20 flex items-center justify-center font-mono text-[11px] shrink-0">
+                          {OPTION_LETTERS[oIdx] || oIdx + 1}
+                        </span>
+                        <span>{opt}</span>
                       </button>
                     ))}
                   </div>
@@ -250,16 +317,16 @@ export function QuestPlayPage() {
                     value={draft}
                     onChange={(e) => setSelectedAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
                     placeholder="Type your answer..."
-                    className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2 text-sm text-[#F8FAFC]"
+                    className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC]"
                   />
                 )}
 
                 {existing ? (
                   <div
-                    className={`p-3 rounded-lg text-xs flex items-center gap-2 ${
+                    className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${
                       existing.is_correct
-                        ? 'bg-[#22C55E]/10 text-[#22C55E]'
-                        : 'bg-[#EF4444]/10 text-[#EF4444]'
+                        ? 'bg-[#22C55E]/10 border-[#22C55E]/30 text-[#22C55E]'
+                        : 'bg-[#EF4444]/10 border-[#EF4444]/30 text-[#EF4444]'
                     }`}
                   >
                     {existing.is_correct ? (
@@ -281,7 +348,7 @@ export function QuestPlayPage() {
                           answer: draft,
                         })
                       }
-                      className="px-4 py-1.5 rounded-lg bg-[#22D3EE] text-[#0B1020] text-xs font-bold"
+                      className="px-4 py-2 rounded-xl bg-[#22D3EE] hover:bg-[#06B6D4] disabled:opacity-50 text-[#0B1020] text-xs font-bold transition-colors"
                     >
                       Check Answer
                     </button>
@@ -297,7 +364,7 @@ export function QuestPlayPage() {
                 type="button"
                 onClick={() => completeMut.mutate()}
                 disabled={completeMut.isPending}
-                className="px-6 py-2.5 rounded-lg bg-[#22C55E] hover:bg-[#16A34A] text-[#0B1020] text-sm font-bold"
+                className="px-6 py-2.5 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] text-[#0B1020] text-sm font-bold transition-colors"
               >
                 {completeMut.isPending ? 'Evaluating...' : 'Complete Quest & Claim XP'}
               </button>

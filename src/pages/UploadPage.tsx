@@ -148,16 +148,17 @@ export function UploadPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Upload Study Material</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">
+      <div className="eq-hero-surface rounded-2xl p-6 space-y-1.5">
+        <p className="text-xs font-medium text-[#22D3EE]">Ingestion & Topic Extraction</p>
+        <h1 className="font-display text-2xl font-bold text-[#F8FAFC]">Upload Study Material</h1>
+        <p className="text-sm text-[#94A3B8] leading-relaxed">
           Upload PDF, DOCX, PPTX, or TXT notes (up to {MAX_MB} MB). The Rule-Based Engine extracts
           sections, builds grounded topics, and prepares quizzes and worlds.
         </p>
       </div>
 
       {!createdDoc ? (
-        <form onSubmit={handleUpload} className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-5">
+        <form onSubmit={handleUpload} className="eq-card rounded-2xl p-6 space-y-5">
           {/* Dropzone */}
           <div
             onDragOver={(e) => {
@@ -171,10 +172,12 @@ export function UploadPage() {
               handleSelectFile(e.dataTransfer.files?.[0]);
             }}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
               dragActive
-                ? 'border-[#22D3EE] bg-[#22D3EE]/5'
-                : 'border-slate-400/25 hover:border-[#8B5CF6]/60 bg-[#11182B]'
+                ? 'border-[#22D3EE] bg-[#22D3EE]/10'
+                : file
+                  ? 'border-[#8B5CF6]/60 bg-[#8B5CF6]/5'
+                  : 'border-slate-400/25 hover:border-[#8B5CF6]/60 bg-[#11182B]'
             }`}
           >
             <input
@@ -184,16 +187,18 @@ export function UploadPage() {
               className="hidden"
               onChange={(e) => handleSelectFile(e.target.files?.[0])}
             />
-            <FileUp className="w-9 h-9 text-[#22D3EE] mx-auto mb-3" />
+            <div className="w-12 h-12 rounded-2xl bg-[#22D3EE]/10 border border-[#22D3EE]/25 flex items-center justify-center mx-auto mb-3.5">
+              <FileUp className="w-6 h-6 text-[#22D3EE]" />
+            </div>
             {file ? (
               <div className="space-y-1">
-                <p className="font-medium text-[#F8FAFC]">{file.name}</p>
+                <p className="font-display font-semibold text-[#F8FAFC]">{file.name}</p>
                 <p className="text-xs text-[#94A3B8] tabular-nums">
                   {(file.size / (1024 * 1024)).toFixed(2)} MB · Click to change file
                 </p>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <p className="text-sm font-medium text-[#F8FAFC]">
                   Drag and drop your study material here, or click to browse
                 </p>
@@ -215,7 +220,7 @@ export function UploadPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Data Structures Lecture 3"
-                className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
+                className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
               />
             </div>
 
@@ -227,7 +232,7 @@ export function UploadPage() {
                 id="doc-subject"
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
-                className="w-full bg-[#11182B] border border-slate-400/20 rounded-lg px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
+                className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
               >
                 <option value="">Uncategorized</option>
                 {(subjectsData?.items || []).map((s) => (
@@ -240,32 +245,32 @@ export function UploadPage() {
           </div>
 
           {/* Quick Inline Subject Creation */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <input
               type="text"
               value={newSubjectName}
               onChange={(e) => setNewSubjectName(e.target.value)}
               placeholder="Or add a new subject..."
-              className="flex-1 bg-[#11182B] border border-slate-400/20 rounded-lg px-3 py-2 text-xs text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
+              className="flex-1 bg-[#11182B] border border-slate-400/20 rounded-xl px-3.5 py-2 text-xs text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
             />
             <button
               type="button"
               onClick={handleCreateSubject}
-              className="px-3 py-2 rounded-lg bg-[#1B2740] border border-slate-400/20 text-xs font-medium text-[#F8FAFC] hover:border-[#22D3EE]/50"
+              className="px-4 py-2 rounded-xl bg-[#1B2740] border border-slate-400/20 text-xs font-semibold text-[#F8FAFC] hover:border-[#22D3EE]/50 transition-colors whitespace-nowrap shrink-0"
             >
               Add Subject
             </button>
           </div>
 
           {uploading && (
-            <div className="space-y-2">
+            <div className="p-4 rounded-xl bg-[#11182B] border border-slate-400/15 space-y-2">
               <div className="flex justify-between text-xs text-[#94A3B8] tabular-nums">
-                <span>Uploading file...</span>
-                <span>{uploadPct}%</span>
+                <span className="font-medium text-[#F8FAFC]">Uploading file...</span>
+                <span className="font-mono text-[#22D3EE]">{uploadPct}%</span>
               </div>
-              <div className="h-2 bg-[#11182B] rounded-full overflow-hidden">
+              <div className="h-2 bg-[#0B1020] rounded-full overflow-hidden border border-slate-400/15">
                 <div
-                  className="h-full bg-[#22D3EE] transition-all duration-200"
+                  className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#22D3EE] transition-all duration-200"
                   style={{ width: `${uploadPct}%` }}
                 />
               </div>
@@ -283,7 +288,7 @@ export function UploadPage() {
             <button
               type="submit"
               disabled={uploading || !file}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-50 text-white text-sm font-semibold transition-colors whitespace-nowrap"
             >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
               {uploading ? 'Uploading...' : 'Upload & Process'}
@@ -291,19 +296,21 @@ export function UploadPage() {
           </div>
         </form>
       ) : (
-        <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
+        <div className="eq-card rounded-2xl p-6 space-y-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
               <p className="text-xs text-[#22D3EE] font-medium">Processing Pipeline · Rule-Based Engine</p>
-              <h2 className="font-display text-xl font-bold mt-0.5">{createdDoc.title}</h2>
+              <h2 className="font-display text-xl font-bold text-[#F8FAFC] mt-0.5 truncate">
+                {createdDoc.title}
+              </h2>
             </div>
             <span
-              className={`text-xs font-semibold uppercase ${
+              className={`px-2.5 py-1 rounded-lg border text-xs font-semibold uppercase tracking-wide ${
                 docStatus === 'ready'
-                  ? 'text-[#22C55E]'
+                  ? 'bg-[#22C55E]/10 border-[#22C55E]/30 text-[#22C55E]'
                   : docStatus === 'failed'
-                    ? 'text-[#EF4444]'
-                    : 'text-[#F59E0B]'
+                    ? 'bg-[#EF4444]/10 border-[#EF4444]/30 text-[#EF4444]'
+                    : 'bg-[#F59E0B]/10 border-[#F59E0B]/30 text-[#F59E0B]'
               }`}
             >
               {docStatus || 'processing'}
@@ -315,7 +322,7 @@ export function UploadPage() {
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>
                 {duplicateWarning.message}{' '}
-                <Link to={`/documents/${duplicateWarning.existing_document_id}`} className="underline">
+                <Link to={`/documents/${duplicateWarning.existing_document_id}`} className="underline font-semibold">
                   View existing file
                 </Link>
               </span>
@@ -323,18 +330,18 @@ export function UploadPage() {
           )}
 
           {/* Stage Stepper */}
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
             {PIPELINE_STAGES.map((stage, idx) => {
               const isDone = docStatus === 'ready' || (stageIdx > idx && docStatus !== 'failed');
               const isActive = currentStage === stage && docStatus !== 'ready' && docStatus !== 'failed';
               return (
                 <div
                   key={stage}
-                  className={`p-3 rounded-lg border text-center space-y-1 ${
+                  className={`p-3.5 rounded-xl border text-center space-y-1.5 transition-all ${
                     isDone
                       ? 'bg-[#22C55E]/10 border-[#22C55E]/35 text-[#22C55E]'
                       : isActive
-                        ? 'bg-[#8B5CF6]/15 border-[#8B5CF6]/40 text-[#F8FAFC]'
+                        ? 'bg-[#8B5CF6]/15 border-[#8B5CF6]/45 text-[#F8FAFC]'
                         : 'bg-[#11182B] border-slate-400/15 text-[#94A3B8]'
                   }`}
                 >
@@ -344,10 +351,10 @@ export function UploadPage() {
                     ) : isActive ? (
                       <Loader2 className="w-4 h-4 animate-spin text-[#22D3EE]" />
                     ) : (
-                      <span className="text-xs tabular-nums">{idx + 1}</span>
+                      <span className="text-xs font-mono tabular-nums">{idx + 1}</span>
                     )}
                   </div>
-                  <p className="text-xs capitalize font-medium">{stage}</p>
+                  <p className="text-xs capitalize font-semibold">{stage}</p>
                 </div>
               );
             })}
@@ -367,7 +374,7 @@ export function UploadPage() {
             </div>
           )}
 
-          <div className="flex flex-wrap justify-between gap-3 pt-2 border-t border-slate-400/15">
+          <div className="flex flex-wrap justify-between gap-3 pt-3 border-t border-slate-400/15">
             <button
               type="button"
               onClick={() => {
@@ -377,7 +384,7 @@ export function UploadPage() {
                 setFile(null);
                 setTitle('');
               }}
-              className="px-4 py-2 rounded-lg bg-[#11182B] border border-slate-400/20 text-xs font-medium text-[#94A3B8] hover:text-[#F8FAFC]"
+              className="px-4 py-2 rounded-xl bg-[#11182B] hover:bg-[#1B2740] border border-slate-400/20 text-xs font-medium text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
             >
               Upload Another File
             </button>
@@ -386,7 +393,7 @@ export function UploadPage() {
               <button
                 type="button"
                 onClick={() => navigate(`/documents/${createdDoc.id}`)}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold transition-colors whitespace-nowrap"
               >
                 Open Document & Topics
                 <ArrowRight className="w-4 h-4" />

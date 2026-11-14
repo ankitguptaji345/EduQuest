@@ -70,7 +70,7 @@ export function AuthPage() {
           Back to EduQuest AI
         </Link>
 
-        <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-8 space-y-6">
+        <div className="eq-card rounded-2xl p-8 space-y-6">
           <div className="space-y-1">
             <h1 className="font-display text-2xl font-bold">
               {mode === 'login'
@@ -89,7 +89,7 @@ export function AuthPage() {
           </div>
 
           {/* Mode Tabs */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-[#11182B] rounded-lg border border-slate-400/15">
+          <div className="grid grid-cols-3 gap-1 p-1 bg-[#11182B] rounded-xl border border-slate-400/15">
             {(['login', 'register', 'reset'] as Mode[]).map((m) => (
               <button
                 key={m}
@@ -98,7 +98,7 @@ export function AuthPage() {
                   setMode(m);
                   setErrorMsg('');
                 }}
-                className={`py-2 text-xs font-medium rounded-md transition-colors capitalize ${
+                className={`py-2 text-xs font-semibold rounded-lg transition-colors capitalize ${
                   mode === m
                     ? 'bg-[#1B2740] text-[#F8FAFC]'
                     : 'text-[#94A3B8] hover:text-[#F8FAFC]'
@@ -110,12 +110,12 @@ export function AuthPage() {
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#EF4444]">
+            <div className="p-3.5 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#EF4444]">
               {errorMsg}
             </div>
           )}
           {infoMsg && (
-            <div className="p-3 rounded-lg bg-[#22C55E]/10 border border-[#22C55E]/30 text-xs text-[#22C55E]">
+            <div className="p-3.5 rounded-xl bg-[#22C55E]/10 border border-[#22C55E]/30 text-xs text-[#22C55E]">
               {infoMsg}
             </div>
           )}
@@ -133,7 +133,7 @@ export function AuthPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Alex Rivera"
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#0B1020] border border-slate-400/20 text-sm text-[#F8FAFC] placeholder:text-[#94A3B8]/50 focus:border-[#22D3EE] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B1020] border border-slate-400/20 text-sm text-[#F8FAFC] placeholder:text-[#94A3B8]/50 focus:border-[#22D3EE] focus:outline-none"
                 />
               </div>
             )}
@@ -149,7 +149,7 @@ export function AuthPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="student@university.edu"
-                className="w-full px-3.5 py-2.5 rounded-lg bg-[#0B1020] border border-slate-400/20 text-sm text-[#F8FAFC] placeholder:text-[#94A3B8]/50 focus:border-[#22D3EE] focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B1020] border border-slate-400/20 text-sm text-[#F8FAFC] placeholder:text-[#94A3B8]/50 focus:border-[#22D3EE] focus:outline-none"
               />
             </div>
 
@@ -165,14 +165,14 @@ export function AuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimum 6 characters"
-                className="w-full px-3.5 py-2.5 rounded-lg bg-[#0B1020] border border-slate-400/20 text-sm text-[#F8FAFC] placeholder:text-[#94A3B8]/50 focus:border-[#22D3EE] focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B1020] border border-slate-400/20 text-sm text-[#F8FAFC] placeholder:text-[#94A3B8]/50 focus:border-[#22D3EE] focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-60 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-60 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {mode === 'login'

@@ -31,7 +31,12 @@ export function QuizResultsPage() {
   });
 
   if (isLoading || !data) {
-    return <div className="h-64 rounded-2xl bg-[#151E33] animate-pulse" />;
+    return (
+      <div className="max-w-3xl mx-auto space-y-4 animate-pulse">
+        <div className="h-36 rounded-2xl bg-[#151E33]" />
+        <div className="h-44 rounded-xl bg-[#151E33]" />
+      </div>
+    );
   }
 
   const { assessment, questions, answers, review } = data;
@@ -41,44 +46,55 @@ export function QuizResultsPage() {
   const maxScore = Math.max(1, assessment.max_score || questions.length);
   const rawScore = assessment.score ?? answers.reduce((s, a) => s + a.score, 0);
   const pct = Math.round((rawScore / maxScore) * 100);
-  const wrongCount = answers.filter((a) => !a.is_correct).length;
+  const correctCount = answers.filter((a) => a.is_correct).length;
+  const wrongCount = answers.length - correctCount;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-xs text-[#22D3EE] uppercase">Assessment Report</p>
-          <h1 className="font-display text-3xl font-bold tabular-nums">{pct}% Accuracy</h1>
-          <p className="text-sm text-[#94A3B8] tabular-nums">
-            {answers.filter((a) => a.is_correct).length} of {questions.length} correct ·{' '}
-            {wrongCount} flagged for review
-          </p>
+      <div className="eq-hero-surface rounded-2xl p-6 lg:p-7 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-[#22D3EE] uppercase">Assessment Report</p>
+            <h1 className="font-display text-3xl lg:text-4xl font-bold tabular-nums">{pct}% Accuracy</h1>
+            <p className="text-sm text-[#94A3B8] tabular-nums">
+              {correctCount} of {questions.length} correct · {wrongCount} flagged for misconception review
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2.5 shrink-0">
+            {wrongCount > 0 && (
+              <Link
+                to="/misconceptions"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#F59E0B]/15 hover:bg-[#F59E0B]/25 border border-[#F59E0B]/40 text-xs font-semibold text-[#F59E0B] transition-colors"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Review Misconceptions
+              </Link>
+            )}
+            <Link
+              to="/assessments"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold transition-colors"
+            >
+              <Target className="w-3.5 h-3.5" />
+              New Quiz
+            </Link>
+            <Link
+              to="/worlds"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#11182B] hover:bg-[#1B2740] border border-slate-400/20 text-xs font-medium text-[#F8FAFC] transition-colors"
+            >
+              <Compass className="w-3.5 h-3.5 text-[#22D3EE]" />
+              Learning Worlds
+            </Link>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2.5">
-          {wrongCount > 0 && (
-            <Link
-              to="/misconceptions"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#F59E0B]/15 border border-[#F59E0B]/40 text-xs font-semibold text-[#F59E0B]"
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Review Misconceptions
-            </Link>
-          )}
-          <Link
-            to="/assessments"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#8B5CF6] text-white text-xs font-semibold"
-          >
-            <Target className="w-3.5 h-3.5" />
-            New Quiz
-          </Link>
-          <Link
-            to="/worlds"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#11182B] border border-slate-400/20 text-xs font-medium text-[#F8FAFC]"
-          >
-            <Compass className="w-3.5 h-3.5 text-[#22D3EE]" />
-            Learning Worlds
-          </Link>
+        <div className="h-2.5 bg-[#0B1020] rounded-full overflow-hidden border border-slate-400/15">
+          <div
+            className={`h-full transition-all duration-500 ${
+              pct >= 75 ? 'bg-[#22C55E]' : pct >= 50 ? 'bg-[#22D3EE]' : 'bg-[#F59E0B]'
+            }`}
+            style={{ width: `${pct}%` }}
+          />
         </div>
       </div>
 
@@ -92,10 +108,12 @@ export function QuizResultsPage() {
           return (
             <div
               key={q.id}
-              className="bg-[#151E33] border border-slate-400/15 rounded-xl p-5 space-y-2.5"
+              className={`eq-card rounded-2xl p-5 space-y-3 border ${
+                ok ? 'border-[#22C55E]/25' : 'border-[#EF4444]/25'
+              }`}
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="font-medium text-sm text-[#F8FAFC]">
+                <p className="font-display font-semibold text-sm lg:text-base text-[#F8FAFC]">
                   <span className="text-[#94A3B8] mr-2 tabular-nums">Q{idx + 1}.</span>
                   {q.prompt}
                 </p>
@@ -106,27 +124,30 @@ export function QuizResultsPage() {
                 )}
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-3 text-xs pt-1">
-                <div className="p-3 rounded-lg bg-[#11182B] border border-slate-400/15">
-                  <span className="text-[#94A3B8]">Your Answer: </span>
+              <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/15 space-y-1">
+                  <span className="text-[#94A3B8] block">Your Answer</span>
                   <strong className={ok ? 'text-[#22C55E]' : 'text-[#EF4444]'}>
                     {ans?.answer.value || 'Not answered'}
                   </strong>
                 </div>
                 {rev && (
-                  <div className="p-3 rounded-lg bg-[#11182B] border border-slate-400/15">
-                    <span className="text-[#94A3B8]">Expected Answer: </span>
+                  <div className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/15 space-y-1">
+                    <span className="text-[#94A3B8] block">Expected Answer</span>
                     <strong className="text-[#22C55E]">{rev.correct_answer}</strong>
                   </div>
                 )}
               </div>
 
               {rev?.explanation && (
-                <p className="text-xs text-[#94A3B8] leading-relaxed">{rev.explanation}</p>
+                <div className="p-3.5 rounded-xl bg-[#11182B]/60 border border-slate-400/10 text-xs text-[#94A3B8] leading-relaxed">
+                  <strong className="text-[#F8FAFC]">Explanation: </strong>
+                  {rev.explanation}
+                </div>
               )}
               {q.source_refs.length > 0 && (
                 <p className="text-xs text-[#22D3EE]">
-                  Source: {q.source_refs.map((r) => r.label).join(', ')}
+                  Grounded Source: {q.source_refs.map((r) => r.label).join(', ')}
                 </p>
               )}
             </div>

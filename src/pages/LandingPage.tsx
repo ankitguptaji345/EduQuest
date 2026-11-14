@@ -78,14 +78,14 @@ export function LandingPage() {
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <Link
                 to={ctaTarget}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-semibold text-sm transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-semibold text-sm transition-colors"
               >
                 {user ? 'Go to Dashboard' : 'Start Learning Now'}
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="#how-it-works"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#151E33] hover:bg-[#1B2740] border border-slate-400/15 text-[#F8FAFC] font-medium text-sm transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#151E33] hover:bg-[#1B2740] border border-slate-400/20 text-[#F8FAFC] font-medium text-sm transition-colors"
               >
                 See How It Works
               </a>
@@ -100,32 +100,34 @@ export function LandingPage() {
           </motion.div>
 
           {/* Differentiator Preview Panel */}
-          <div className="lg:col-span-5 bg-[#151E33] border border-slate-400/15 rounded-2xl p-6 space-y-5">
+          <div className="lg:col-span-5 eq-hero-surface rounded-2xl p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-400/15 pb-4">
               <div>
-                <p className="text-xs text-[#94A3B8]">Core Differentiator</p>
+                <p className="text-xs font-medium text-[#22D3EE]">Core Differentiator</p>
                 <h2 className="font-display text-lg font-semibold text-[#F8FAFC]">
                   Misconception Diagnosis Loop
                 </h2>
               </div>
-              <AlertTriangle className="w-5 h-5 text-[#F59E0B]" />
+              <div className="w-9 h-9 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/25 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
+              </div>
             </div>
 
-            <div className="space-y-4 text-sm">
-              <div className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/15">
+            <div className="space-y-3.5 text-sm">
+              <div className="p-3.5 rounded-xl bg-[#0B1020]/65 border border-slate-400/15">
                 <p className="text-xs text-[#94A3B8] mb-1">01. Student Response Detected</p>
                 <p className="text-[#F8FAFC]">
                   Answered <span className="text-[#EF4444] font-medium">"Oldest item at bottom (FIFO)"</span> for
                   Stack POP operation across 2 attempts.
                 </p>
               </div>
-              <div className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/15">
+              <div className="p-3.5 rounded-xl bg-[#0B1020]/65 border border-slate-400/15">
                 <p className="text-xs text-[#F59E0B] mb-1">02. Confirmed Diagnosis · Confidence 88%</p>
                 <p className="text-[#F8FAFC]">
                   LIFO (Stack) vs FIFO (Queue) Confusion — requires corrective comparison before advancing.
                 </p>
               </div>
-              <div className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/15">
+              <div className="p-3.5 rounded-xl bg-[#0B1020]/65 border border-slate-400/15">
                 <p className="text-xs text-[#22C55E] mb-1">03. Corrective Lesson & Verification</p>
                 <p className="text-[#94A3B8]">
                   Targeted mini-lesson grounded in Page 2 + follow-up check updates status to Resolved and
@@ -176,7 +178,7 @@ export function LandingPage() {
                 return (
                   <div
                     key={item.step}
-                    className="bg-[#151E33] border border-slate-400/15 rounded-xl p-6 space-y-3"
+                    className="eq-card eq-card-hover rounded-2xl p-6 space-y-3"
                   >
                     <div className="flex items-center justify-between text-xs text-[#94A3B8]">
                       <span className="font-mono">{item.step}</span>
@@ -222,9 +224,11 @@ export function LandingPage() {
               return (
                 <div
                   key={f.title}
-                  className="bg-[#151E33] border border-slate-400/15 rounded-xl p-6 space-y-3"
+                  className="eq-card eq-card-hover rounded-2xl p-6 space-y-3"
                 >
-                  <Icon className="w-5 h-5 text-[#8B5CF6]" />
+                  <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-[#8B5CF6]" />
+                  </div>
                   <h3 className="font-display text-base font-semibold">{f.title}</h3>
                   <p className="text-sm text-[#94A3B8] leading-relaxed">{f.desc}</p>
                 </div>
