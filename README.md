@@ -1,4 +1,4 @@
-# 🎓 EduQuest AI
+# 🎓 EduQuest 
 ### Your AI Teacher. Your Learning World. Your Adventure.
 
 EduQuest AI is an AI-powered, gamified learning platform that transforms traditional study materials into personalized, interactive learning experiences.
@@ -148,6 +148,8 @@ Gemini integration is planned as a future enhancement through the modular AI pro
 
 ## 🔮 Future Roadmap
 
+
+
 - [ ] Advanced Gemini-powered tutoring.
 - [ ] Semantic document search and embeddings.
 - [ ] Supabase integration.
@@ -173,4 +175,4 @@ EduQuest AI aims to turn every student's learning journey into an interactive ad
 
 ---
 
-*EduQuest AI — Turning Learning into an Adventure.*
+*EduQuest  — Turning Learning into an Adventure.*
