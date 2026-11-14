@@ -9,9 +9,10 @@ export const worldService = {
   async generateWorldForDocument(
     userId: string,
     documentId: string,
+    options: { refreshOnReprocess?: boolean } = {},
   ): Promise<{ world: LearningWorldRow; quests: QuestRow[] } | null> {
     const existing = worldRepo.findWorldByDocument(userId, documentId);
-    if (existing) {
+    if (existing && !options.refreshOnReprocess) {
       return { world: existing, quests: worldRepo.listQuestsForWorld(userId, existing.id) };
     }
 
@@ -19,33 +20,40 @@ export const worldService = {
     if (!doc) return null;
 
     const allTopics = topicRepo.listTopics(userId, { documentId });
-    if (allTopics.length === 0) return null;
+    if (allTopics.length === 0) {
+      return existing
+        ? { world: existing, quests: worldRepo.listQuestsForWorld(userId, existing.id) }
+        : null;
+    }
 
     const primaryTopics = allTopics.filter((t) => t.kind === 'topic');
     const usableTopics = primaryTopics.length > 0 ? primaryTopics : allTopics;
     const existingWorlds = worldRepo.listWorlds(userId);
 
-    const worldId = crypto.randomUUID();
-    const world: LearningWorldRow = {
-      id: worldId,
-      user_id: userId,
-      subject_id: doc.subject_id,
-      document_id: documentId,
-      position: existingWorlds.length + 1,
-      title: `${doc.title} — Mastery World`,
-      theme_key: THEMES[existingWorlds.length % THEMES.length],
-      description: `Adaptive quest progression grounded in ${usableTopics.length} topics extracted from "${doc.title}".`,
-      status: 'ready',
-      model: 'rule-based-v1',
-      prompt_version: 'rule-based-v1',
-    };
+    const worldId = existing ? existing.id : crypto.randomUUID();
+    const description = `Adaptive quest progression grounded in ${usableTopics.length} topics extracted from "${doc.title}".`;
+    const world: LearningWorldRow = existing
+      ? { ...existing, description, model: 'rule-based-v2' }
+      : {
+          id: worldId,
+          user_id: userId,
+          subject_id: doc.subject_id,
+          document_id: documentId,
+          position: existingWorlds.length + 1,
+          title: `${doc.title} — Mastery World`,
+          theme_key: THEMES[existingWorlds.length % THEMES.length],
+          description,
+          status: 'ready',
+          model: 'rule-based-v2',
+          prompt_version: 'rule-based-v2',
+        };
 
     const quests: QuestRow[] = [];
     let pos = 1;
     let prevQuestId: string | null = null;
 
     // Build lesson + practice/checkpoint quests from real extracted topics (capped neatly)
-    const sliceTopics = usableTopics.slice(0, 4);
+    const sliceTopics = usableTopics.slice(0, 5);
     for (let i = 0; i < sliceTopics.length; i++) {
       const topic = sliceTopics[i];
       const lessonId = crypto.randomUUID();
@@ -59,7 +67,7 @@ export const worldService = {
         intro: topic.summary || `Master the fundamentals of ${topic.name} from your study material.`,
         objective: `Achieve at least 70% accuracy on ${topic.name}.`,
         topic_ids: [topic.id],
-        lesson_markdown: null, // Generated lazily on quest start
+        lesson_markdown: null,
         completion_rules: { lesson_required: true, min_items: 2, min_accuracy: 0.5 },
         mastery_threshold: 0.7,
         xp_reward: 50 + i * 15,
@@ -94,6 +102,14 @@ export const worldService = {
       },
       source_refs: usableTopics.flatMap((t) => t.source_refs).slice(0, 4),
     });
+
+    if (existing) {
+      worldRepo.replaceWorldQuestsIfUnattempted(userId, existing.id, description, quests);
+      return {
+        world: worldRepo.getWorld(userId, existing.id) || world,
+        quests: worldRepo.listQuestsForWorld(userId, existing.id),
+      };
+    }
 
     worldRepo.createWorldWithQuests(world, quests);
     return { world, quests };

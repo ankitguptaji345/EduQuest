@@ -1,8 +1,21 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, Compass, Target, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Compass,
+  Target,
+  XCircle,
+} from 'lucide-react';
 import { apiFetch } from '../lib/api';
-import type { Assessment, QuestionPublic } from '../types/api';
+import type {
+  Assessment,
+  AssessmentAnalyticsSummary,
+  QuestionPublic,
+} from '../types/api';
 
 interface ResultsResponse {
   assessment: Assessment;
@@ -19,10 +32,12 @@ interface ResultsResponse {
     correct_answer: string;
     explanation: string;
   }>;
+  analytics_summary?: AssessmentAnalyticsSummary | null;
 }
 
 export function QuizResultsPage() {
   const { id } = useParams<{ id: string }>();
+  const [filterMode, setFilterMode] = useState<'all' | 'incorrect'>('all');
 
   const { data, isLoading } = useQuery({
     queryKey: ['assessment-results', id],
@@ -39,7 +54,7 @@ export function QuizResultsPage() {
     );
   }
 
-  const { assessment, questions, answers, review } = data;
+  const { assessment, questions, answers, review, analytics_summary } = data;
   const answerMap = new Map(answers.map((a) => [a.question_id, a]));
   const reviewMap = new Map(review.map((r) => [r.question_id, r]));
 
@@ -49,15 +64,30 @@ export function QuizResultsPage() {
   const correctCount = answers.filter((a) => a.is_correct).length;
   const wrongCount = answers.length - correctCount;
 
+  const visibleQuestions =
+    filterMode === 'incorrect'
+      ? questions.filter((q) => !answerMap.get(q.id)?.is_correct)
+      : questions;
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {/* Score Summary Card */}
       <div className="eq-hero-surface rounded-2xl p-6 lg:p-7 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-[#22D3EE] uppercase">Assessment Report</p>
-            <h1 className="font-display text-3xl lg:text-4xl font-bold tabular-nums">{pct}% Accuracy</h1>
+            <p className="text-xs font-medium text-[#22D3EE] uppercase">
+              {analytics_summary?.document_title
+                ? `${analytics_summary.document_title} · Assessment Report`
+                : 'Assessment Report'}
+            </p>
+            <h1 className="font-display text-3xl lg:text-4xl font-bold tabular-nums">
+              {pct}% Accuracy ({correctCount}/{questions.length})
+            </h1>
             <p className="text-sm text-[#94A3B8] tabular-nums">
-              {correctCount} of {questions.length} correct · {wrongCount} flagged for misconception review
+              {correctCount} correct · {wrongCount} incorrect
+              {analytics_summary?.weak_topics.length
+                ? ` · ${analytics_summary.weak_topics.length} weak topic${analytics_summary.weak_topics.length === 1 ? '' : 's'} detected`
+                : ''}
             </p>
           </div>
 
@@ -98,10 +128,111 @@ export function QuizResultsPage() {
         </div>
       </div>
 
+      {/* Per-Topic Breakdown & Adaptive Study Recommendations */}
+      {analytics_summary && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="eq-card rounded-2xl p-5 space-y-3.5">
+            <h2 className="font-display text-sm font-semibold text-[#F8FAFC] uppercase tracking-wide">
+              Topic Performance Breakdown
+            </h2>
+            <div className="space-y-2.5">
+              {analytics_summary.per_topic.map((tp, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-[#11182B] border border-slate-400/15 space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="font-semibold text-[#F8FAFC] truncate">{tp.topic_name}</span>
+                    <span
+                      className={`font-mono font-semibold shrink-0 ${
+                        tp.accuracy >= 70
+                          ? 'text-[#22C55E]'
+                          : tp.accuracy >= 50
+                            ? 'text-[#F59E0B]'
+                            : 'text-[#EF4444]'
+                      }`}
+                    >
+                      {tp.correct}/{tp.total} ({tp.accuracy}%)
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[#0B1020] overflow-hidden">
+                    <div
+                      className={`h-full ${
+                        tp.accuracy >= 70
+                          ? 'bg-[#22C55E]'
+                          : tp.accuracy >= 50
+                            ? 'bg-[#F59E0B]'
+                            : 'bg-[#EF4444]'
+                      }`}
+                      style={{ width: `${tp.accuracy}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="eq-card rounded-2xl p-5 space-y-3.5">
+            <h2 className="font-display text-sm font-semibold text-[#22D3EE] uppercase tracking-wide">
+              Adaptive Study Recommendations
+            </h2>
+            <div className="space-y-2.5">
+              {analytics_summary.recommendations.map((rec, idx) => (
+                <div
+                  key={idx}
+                  className="p-3.5 rounded-xl bg-[#11182B] border border-slate-400/15 space-y-2"
+                >
+                  <p className="text-xs font-semibold text-[#F8FAFC]">{rec.title}</p>
+                  <p className="text-xs text-[#94A3B8] leading-relaxed">{rec.reason}</p>
+                  <Link
+                    to={rec.action_path}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#22D3EE] hover:underline"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    {rec.action_label}
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Question Breakdown */}
       <div className="space-y-4">
-        <h2 className="font-display text-lg font-semibold">Question-by-Question Review</h2>
-        {questions.map((q, idx) => {
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-lg font-semibold">Question-by-Question Review</h2>
+          {wrongCount > 0 && (
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setFilterMode('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  filterMode === 'all'
+                    ? 'bg-[#8B5CF6] text-white'
+                    : 'bg-[#11182B] border border-slate-400/15 text-[#94A3B8]'
+                }`}
+              >
+                All ({questions.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterMode('incorrect')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  filterMode === 'incorrect'
+                    ? 'bg-[#EF4444]/80 text-white'
+                    : 'bg-[#11182B] border border-slate-400/15 text-[#94A3B8]'
+                }`}
+              >
+                Incorrect ({wrongCount})
+              </button>
+            </div>
+          )}
+        </div>
+
+        {visibleQuestions.map((q) => {
+          const origIdx = questions.findIndex((item) => item.id === q.id);
           const ans = answerMap.get(q.id);
           const rev = reviewMap.get(q.id);
           const ok = ans?.is_correct;
@@ -113,10 +244,15 @@ export function QuizResultsPage() {
               }`}
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="font-display font-semibold text-sm lg:text-base text-[#F8FAFC]">
-                  <span className="text-[#94A3B8] mr-2 tabular-nums">Q{idx + 1}.</span>
-                  {q.prompt}
-                </p>
+                <div className="space-y-1">
+                  {q.topic_name && (
+                    <span className="text-[11px] font-medium text-[#C4B5FD]">{q.topic_name}</span>
+                  )}
+                  <p className="font-display font-semibold text-sm lg:text-base text-[#F8FAFC]">
+                    <span className="text-[#94A3B8] mr-2 tabular-nums">Q{origIdx + 1}.</span>
+                    {q.prompt}
+                  </p>
+                </div>
                 {ok ? (
                   <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0" />
                 ) : (

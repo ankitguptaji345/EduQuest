@@ -174,6 +174,66 @@ export const worldRepo = {
     return rows.map(hydrateQuest);
   },
 
+  replaceWorldQuestsIfUnattempted(
+    userId: string,
+    worldId: string,
+    description: string,
+    quests: QuestRow[],
+  ): boolean {
+    const db = getDb();
+    const attemptCount = db
+      .prepare(
+        `SELECT COUNT(*) as cnt FROM quest_attempts qa
+         JOIN quests q ON q.id = qa.quest_id
+         WHERE q.world_id = ? AND q.user_id = ?`,
+      )
+      .get(worldId, userId) as { cnt: number };
+
+    if ((attemptCount?.cnt || 0) > 0) {
+      return false;
+    }
+
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.prepare('DELETE FROM quests WHERE world_id = ? AND user_id = ?').run(worldId, userId);
+      db.prepare('UPDATE learning_worlds SET description = ?, model = ? WHERE id = ? AND user_id = ?').run(
+        description,
+        'rule-based-v2',
+        worldId,
+        userId,
+      );
+      const qStmt = db.prepare(
+        `INSERT INTO quests
+         (id, user_id, world_id, position, kind, title, intro, objective, topic_ids, lesson_markdown, completion_rules, mastery_threshold, xp_reward, unlock_rule, source_refs)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      );
+      for (const q of quests) {
+        qStmt.run(
+          q.id,
+          userId,
+          worldId,
+          q.position,
+          q.kind,
+          q.title,
+          q.intro,
+          q.objective,
+          JSON.stringify(q.topic_ids),
+          q.lesson_markdown,
+          JSON.stringify(q.completion_rules),
+          q.mastery_threshold,
+          q.xp_reward,
+          JSON.stringify(q.unlock_rule),
+          JSON.stringify(q.source_refs),
+        );
+      }
+      db.exec('COMMIT');
+      return true;
+    } catch (err) {
+      db.exec('ROLLBACK');
+      throw err;
+    }
+  },
+
   getQuest(userId: string, questId: string): QuestRow | undefined {
     const db = getDb();
     const r = db

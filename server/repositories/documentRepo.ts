@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { getDb } from '../core/database.ts';
+import type { StructuredStudyNotes } from '../services/documents/cleaner.ts';
 
 export interface DocumentRow {
   id: string;
@@ -66,6 +67,7 @@ export interface DocumentAnalysisRow {
   summary: string;
   learning_objectives: string[];
   exam_questions: Array<{ prompt: string; topic: string; difficulty: string }>;
+  study_notes: StructuredStudyNotes | null;
   analysis_version: string;
   model: string;
   prompt_version: string;
@@ -305,20 +307,24 @@ export const documentRepo = {
     summary: string;
     learningObjectives: string[];
     examQuestions: Array<{ prompt: string; topic: string; difficulty: string }>;
+    studyNotes?: StructuredStudyNotes | null;
+    analysisVersion?: string;
     model: string;
     promptVersion: string;
   }): void {
     const db = getDb();
     db.prepare(
       `INSERT OR REPLACE INTO document_analyses
-       (document_id, user_id, summary, learning_objectives, exam_questions, analysis_version, model, prompt_version)
-       VALUES (?, ?, ?, ?, ?, '1.0', ?, ?)`,
+       (document_id, user_id, summary, learning_objectives, exam_questions, study_notes, analysis_version, model, prompt_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       params.documentId,
       params.userId,
       params.summary,
       JSON.stringify(params.learningObjectives),
       JSON.stringify(params.examQuestions),
+      params.studyNotes ? JSON.stringify(params.studyNotes) : null,
+      params.analysisVersion || '2.0',
       params.model,
       params.promptVersion,
     );
@@ -335,6 +341,7 @@ export const documentRepo = {
           summary: string;
           learning_objectives: string;
           exam_questions: string;
+          study_notes: string | null;
           analysis_version: string;
           model: string;
           prompt_version: string;
@@ -346,6 +353,7 @@ export const documentRepo = {
       ...row,
       learning_objectives: JSON.parse(row.learning_objectives),
       exam_questions: JSON.parse(row.exam_questions),
+      study_notes: row.study_notes ? (JSON.parse(row.study_notes) as StructuredStudyNotes) : null,
     };
   },
 

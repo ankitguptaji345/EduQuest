@@ -129,10 +129,68 @@ export interface TutorMessage {
   created_at: string;
 }
 
+export interface PracticalComparisonTable {
+  title: string;
+  headers: string[];
+  rows: string[][];
+}
+
+export interface PracticalSubtopic {
+  title: string;
+  theory: string | null;
+  code: string | null;
+  sample_output: string | null;
+  source_ref: string;
+}
+
+export interface PracticalExperiment {
+  number: number;
+  title: string;
+  source_ref: string;
+  aim: string | null;
+  theory: string | null;
+  subtopics: PracticalSubtopic[];
+  comparisons: PracticalComparisonTable[];
+  key_points: string[];
+  result: string | null;
+}
+
+export interface TheorySection {
+  title: string;
+  source_ref: string;
+  introduction: string | null;
+  definitions: string[];
+  explanation: string[];
+  key_concepts: string[];
+  formulas: string[];
+  examples: string[];
+  comparisons: string[];
+  quick_revision: string[];
+  important_questions: string[];
+}
+
+export interface CommandRefItem {
+  command: string;
+  purpose: string;
+  source_ref: string;
+}
+
+export interface StructuredStudyNotes {
+  kind: 'practical' | 'theory';
+  overview: string;
+  unsuitable_reason: string | null;
+  general_instructions: string[];
+  practical_experiments: PracticalExperiment[];
+  commands_reference: CommandRefItem[];
+  viva_questions: string[];
+  theory_sections: TheorySection[];
+}
+
 export interface QuestionPublic {
   id: string;
   assessment_id: string;
   topic_id: string | null;
+  topic_name?: string | null;
   position: number;
   round_no: number;
   type: string;
@@ -141,6 +199,31 @@ export interface QuestionPublic {
   options: string[];
   hints_count: number;
   source_refs: SourceRef[];
+}
+
+export interface AssessmentAnalyticsSummary {
+  document_id: string | null;
+  document_title: string | null;
+  per_topic: Array<{
+    topic_id: string | null;
+    topic_name: string;
+    correct: number;
+    total: number;
+    accuracy: number;
+    source_ref: string | null;
+  }>;
+  weak_topics: Array<{
+    topic_id: string | null;
+    topic_name: string;
+    accuracy: number;
+    source_ref: string | null;
+  }>;
+  recommendations: Array<{
+    title: string;
+    reason: string;
+    action_path: string;
+    action_label: string;
+  }>;
 }
 
 export interface Assessment {

@@ -118,8 +118,8 @@ export const quizService = {
     if (drafts.length === 0) {
       throw new AppError(
         422,
-        'QUESTION_GENERATION_EMPTY',
-        'Could not generate unique questions from the selected study material.',
+        'INSUFFICIENT_EDUCATIONAL_CONTENT',
+        'Could not generate meaningful educational questions from the selected study material. Ensure the document contains concepts, code, definitions, or theory beyond cover pages.',
       );
     }
 
@@ -161,9 +161,13 @@ export const quizService = {
       questions,
     });
 
+    const topicMap = new Map(topics.map((t) => [t.id, t]));
     return {
       assessment,
-      questions: assessmentRepo.listQuestionsPublic(params.userId, assessment.id),
+      questions: assessmentRepo.listQuestionsPublic(params.userId, assessment.id).map((q) => ({
+        ...q,
+        topic_name: q.topic_id ? topicMap.get(q.topic_id)?.name || null : null,
+      })),
     };
   },
 

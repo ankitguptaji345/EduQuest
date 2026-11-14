@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Clock,
@@ -52,18 +53,23 @@ export function AssessmentPage() {
 
   // Active quiz state
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [draftAnswer, setDraftAnswer] = useState('');
+  const [draftAnswers, setDraftAnswers] = useState<Record<string, string>>({});
   const [hintsUsed, setHintsUsed] = useState(0);
   const [revealedHints, setRevealedHints] = useState<string[]>([]);
-  const [questionStartTs, setQuestionStartTs] = useState(() => Date.now());
+  const [questionStartTs, setQuestionStartTs] = useState<number | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
-  const [latestFeedback, setLatestFeedback] = useState<{
-    is_correct: boolean;
-    feedback: string;
-    correct_answer: string;
-    explanation: string;
-    thread?: MisconceptionThread | null;
-  } | null>(null);
+  const [feedbackByQ, setFeedbackByQ] = useState<
+    Record<
+      string,
+      {
+        is_correct: boolean;
+        feedback: string;
+        correct_answer: string;
+        explanation: string;
+        thread?: MisconceptionThread | null;
+      }
+    >
+  >({});
 
   const { data: docsData } = useQuery({
     queryKey: ['documents-ready'],
@@ -83,13 +89,29 @@ export function AssessmentPage() {
     enabled: Boolean(id),
   });
 
+  // Reset active state cleanly when opening a new quiz id
   useEffect(() => {
-    if (!id) return;
+    setCurrentIdx(0);
+    setDraftAnswers({});
+    setHintsUsed(0);
+    setRevealedHints([]);
+    setFeedbackByQ({});
+    setElapsedSec(0);
+    setQuestionStartTs(null);
+  }, [id]);
+
+  // Start timer ONLY when an active (non-evaluated) quiz has loaded
+  const isQuizActive = Boolean(id && detail && detail.assessment.status !== 'evaluated');
+  useEffect(() => {
+    if (!isQuizActive) return;
+    const started = Date.now();
+    setQuestionStartTs(started);
+    setElapsedSec(0);
     const t = setInterval(() => {
-      setElapsedSec(Math.floor((Date.now() - questionStartTs) / 1000));
+      setElapsedSec(Math.floor((Date.now() - started) / 1000));
     }, 1000);
     return () => clearInterval(t);
-  }, [id, questionStartTs]);
+  }, [isQuizActive, id, currentIdx]);
 
   const createMut = useMutation({
     mutationFn: () =>
@@ -133,19 +155,22 @@ export function AssessmentPage() {
         idempotent: true,
         body: JSON.stringify({
           question_id: qId,
-          answer: draftAnswer,
+          answer: draftAnswers[qId] || '',
           hints_used: hintsUsed,
-          time_taken_ms: Date.now() - questionStartTs,
+          time_taken_ms: questionStartTs ? Math.max(500, Date.now() - questionStartTs) : 0,
         }),
       }),
-    onSuccess: (res) => {
-      setLatestFeedback({
-        is_correct: res.student_answer.is_correct,
-        feedback: res.student_answer.feedback,
-        correct_answer: res.correct_answer,
-        explanation: res.explanation,
-        thread: res.diagnosis?.thread || null,
-      });
+    onSuccess: (res, qId) => {
+      setFeedbackByQ((prev) => ({
+        ...prev,
+        [qId]: {
+          is_correct: res.student_answer.is_correct,
+          feedback: res.student_answer.feedback,
+          correct_answer: res.correct_answer,
+          explanation: res.explanation,
+          thread: res.diagnosis?.thread || null,
+        },
+      }));
       void queryClient.invalidateQueries({ queryKey: ['assessment-detail', id] });
       void queryClient.invalidateQueries({ queryKey: ['analytics-overview'] });
     },
@@ -181,8 +206,8 @@ export function AssessmentPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Diagnostic & Practice Quizzes</h1>
           <p className="text-sm text-[#94A3B8] mt-1">
-            Questions are generated directly from your processed study documents with server-side answer
-            verification and automatic misconception diagnosis.
+            Questions are generated directly from meaningful educational concepts in your processed study
+            documents with server-side answer verification and automatic misconception diagnosis.
           </p>
         </div>
 
@@ -213,7 +238,7 @@ export function AssessmentPage() {
                   {
                     value: 'practice' as const,
                     title: 'Targeted Practice',
-                    desc: 'Focused mastery check reinforcing key definitions and examples.',
+                    desc: 'Focused mastery check reinforcing key definitions, commands, and applications.',
                   },
                 ].map((opt) => (
                   <button
@@ -259,6 +284,7 @@ export function AssessmentPage() {
                     <option value={3}>3 Questions</option>
                     <option value={5}>5 Questions</option>
                     <option value={8}>8 Questions</option>
+                    <option value={10}>10 Questions</option>
                   </select>
                 </div>
               </div>
@@ -335,7 +361,7 @@ export function AssessmentPage() {
     );
   }
 
-  const { assessment, questions, answers } = detail;
+  const { assessment, questions, answers, review } = detail;
   if (assessment.status === 'evaluated') {
     return (
       <div className="max-w-xl mx-auto eq-card rounded-2xl p-8 text-center space-y-4">
@@ -353,19 +379,21 @@ export function AssessmentPage() {
   }
 
   const q = questions[currentIdx];
-  const existingAnswer = q ? answers.find((a) => a.question_id === q.id) : undefined;
   const answerMap = new Map(answers.map((a) => [a.question_id, a]));
+  const reviewMap = new Map(review.map((r) => [r.question_id, r]));
+  const existingAnswer = q ? answerMap.get(q.id) : undefined;
+  const existingReview = q ? reviewMap.get(q.id) : undefined;
+  const qFeedback = q ? feedbackByQ[q.id] : undefined;
+  const currentDraft = q ? draftAnswers[q.id] || '' : '';
+
   const allAnswered = questions.length > 0 && answers.length >= questions.length;
   const progressPct = Math.round((answers.length / Math.max(1, questions.length)) * 100);
 
   const moveToQuestion = (idx: number) => {
+    if (idx < 0 || idx >= questions.length) return;
     setCurrentIdx(idx);
-    setDraftAnswer('');
     setHintsUsed(0);
     setRevealedHints([]);
-    setLatestFeedback(null);
-    setQuestionStartTs(Date.now());
-    setElapsedSec(0);
   };
 
   return (
@@ -378,17 +406,23 @@ export function AssessmentPage() {
               {assessment.kind.replace('_', ' ')} Assessment
             </p>
             <p className="text-sm font-semibold tabular-nums mt-0.5">
-              Question {currentIdx + 1} of {questions.length} · {answers.length} answered ({progressPct}%)
+              Question {currentIdx + 1} of {questions.length} · {answers.length}/{questions.length} answered ({progressPct}%)
             </p>
           </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#11182B] border border-slate-400/15 text-xs font-mono text-[#F8FAFC] tabular-nums">
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#11182B] border border-slate-400/15 text-xs font-mono text-[#F8FAFC] tabular-nums"
+            title="Time spent on current question"
+          >
             <Clock className="w-3.5 h-3.5 text-[#22D3EE]" />
             {String(Math.floor(elapsedSec / 60)).padStart(2, '0')}:{String(elapsedSec % 60).padStart(2, '0')}
           </div>
         </div>
 
         {/* Interactive Question Navigator Bar */}
-        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.max(1, questions.length)}, minmax(0, 1fr))` }}>
+        <div
+          className="grid gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${Math.max(1, questions.length)}, minmax(0, 1fr))` }}
+        >
           {questions.map((item, idx) => {
             const ans = answerMap.get(item.id);
             const isCurr = idx === currentIdx;
@@ -400,12 +434,12 @@ export function AssessmentPage() {
                 title={`Question ${idx + 1}`}
                 className={`h-2 rounded-full transition-all ${
                   isCurr
-                    ? 'bg-[#22D3EE]'
+                    ? 'bg-[#22D3EE] ring-2 ring-[#22D3EE]/30'
                     : ans
                       ? ans.is_correct
                         ? 'bg-[#22C55E]'
                         : 'bg-[#EF4444]'
-                      : 'bg-[#0B1020]'
+                      : 'bg-[#0B1020] border border-slate-400/20'
                 }`}
               />
             );
@@ -417,9 +451,17 @@ export function AssessmentPage() {
       {q && (
         <div className="eq-card rounded-2xl p-6 lg:p-7 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#94A3B8]">
-            <span className="capitalize font-medium">
-              {q.type.replace('_', ' ')} · Difficulty: <strong className="text-[#F8FAFC]">{q.difficulty}</strong>
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {q.topic_name && (
+                <span className="px-2.5 py-0.5 rounded-md bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#C4B5FD] font-medium">
+                  {q.topic_name}
+                </span>
+              )}
+              <span className="capitalize font-medium">
+                {q.type === 'mcq' ? 'Multiple Choice' : q.type.replace('_', ' ')} ·{' '}
+                <strong className="text-[#F8FAFC]">{q.difficulty}</strong>
+              </span>
+            </div>
             {q.source_refs.length > 0 && (
               <span className="text-[#22D3EE]">{q.source_refs.map((r) => r.label).join(', ')}</span>
             )}
@@ -429,23 +471,48 @@ export function AssessmentPage() {
             {q.prompt}
           </h2>
 
-          {/* Answer Selection */}
+          {/* Answer Selection (Radio A/B/C/D style) */}
           {q.options && q.options.length > 0 ? (
-            <div className="space-y-2.5">
+            <div className="space-y-2.5" role="radiogroup" aria-label="Answer options">
               {q.options.map((opt, oIdx) => {
-                const selected = (existingAnswer?.answer.value || draftAnswer) === opt;
+                const selectedValue = existingAnswer?.answer.value || currentDraft;
+                const selected = selectedValue === opt;
+                const correctAns = qFeedback?.correct_answer || existingReview?.correct_answer;
+                const isRevealedCorrect = Boolean(existingAnswer && correctAns === opt);
+                const isRevealedWrong = Boolean(existingAnswer && selected && !existingAnswer.is_correct);
+
                 return (
                   <button
-                    key={opt}
+                    key={`${q.id}-${oIdx}`}
                     type="button"
+                    role="radio"
+                    aria-checked={selected}
                     disabled={Boolean(existingAnswer) || submitAnswerMut.isPending}
-                    onClick={() => setDraftAnswer(opt)}
+                    onClick={() =>
+                      setDraftAnswers((prev) => ({
+                        ...prev,
+                        [q.id]: opt,
+                      }))
+                    }
                     className={`w-full text-left px-4 py-3.5 rounded-xl border text-sm transition-all flex items-start gap-3 ${
-                      selected
-                        ? 'bg-[#8B5CF6]/20 border-[#8B5CF6] text-[#F8FAFC] shadow-sm'
-                        : 'bg-[#11182B] border-slate-400/20 text-[#94A3B8] hover:text-[#F8FAFC] hover:border-slate-400/40'
+                      isRevealedCorrect
+                        ? 'bg-[#22C55E]/15 border-[#22C55E] text-[#F8FAFC]'
+                        : isRevealedWrong
+                          ? 'bg-[#EF4444]/15 border-[#EF4444] text-[#F8FAFC]'
+                          : selected
+                            ? 'bg-[#8B5CF6]/20 border-[#8B5CF6] text-[#F8FAFC] shadow-sm'
+                            : 'bg-[#11182B] border-slate-400/20 text-[#94A3B8] hover:text-[#F8FAFC] hover:border-slate-400/40'
                     }`}
                   >
+                    <span
+                      className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 ${
+                        selected
+                          ? 'border-[#8B5CF6] bg-[#8B5CF6]/20'
+                          : 'border-slate-400/40 bg-[#0B1020]'
+                      }`}
+                    >
+                      {selected && <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]" />}
+                    </span>
                     <span
                       className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-bold shrink-0 ${
                         selected
@@ -464,15 +531,20 @@ export function AssessmentPage() {
             <textarea
               rows={3}
               disabled={Boolean(existingAnswer) || submitAnswerMut.isPending}
-              value={existingAnswer?.answer.value || draftAnswer}
-              onChange={(e) => setDraftAnswer(e.target.value)}
+              value={existingAnswer?.answer.value || currentDraft}
+              onChange={(e) =>
+                setDraftAnswers((prev) => ({
+                  ...prev,
+                  [q.id]: e.target.value,
+                }))
+              }
               placeholder="Write your grounded answer..."
               className="w-full bg-[#11182B] border border-slate-400/20 rounded-xl px-4 py-3 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#22D3EE]"
             />
           )}
 
           {/* Progressive Hints */}
-          {revealedHints.length > 0 && (
+          {revealedHints.length > 0 && !existingAnswer && (
             <div className="space-y-2">
               {revealedHints.map((h, i) => (
                 <div
@@ -489,16 +561,16 @@ export function AssessmentPage() {
           )}
 
           {/* Feedback & Explanation Panel */}
-          {(latestFeedback || existingAnswer) && (
+          {(qFeedback || existingAnswer) && (
             <div
               className={`p-4 rounded-xl border space-y-2.5 ${
-                (latestFeedback?.is_correct ?? existingAnswer?.is_correct)
+                (qFeedback?.is_correct ?? existingAnswer?.is_correct)
                   ? 'bg-[#22C55E]/10 border-[#22C55E]/35'
                   : 'bg-[#EF4444]/10 border-[#EF4444]/35'
               }`}
             >
               <div className="flex items-center gap-2 text-sm font-semibold">
-                {(latestFeedback?.is_correct ?? existingAnswer?.is_correct) ? (
+                {(qFeedback?.is_correct ?? existingAnswer?.is_correct) ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-[#22C55E]" />
                     <span className="text-[#22C55E]">Correct Answer</span>
@@ -511,21 +583,26 @@ export function AssessmentPage() {
                 )}
               </div>
               <p className="text-xs text-[#F8FAFC]/90 leading-relaxed">
-                {latestFeedback?.feedback || existingAnswer?.feedback}
+                {qFeedback?.feedback || existingAnswer?.feedback}
               </p>
-              {latestFeedback && (
+              {(qFeedback || existingReview) && (
                 <div className="p-3 rounded-lg bg-[#0B1020]/60 border border-slate-400/15 text-xs space-y-1">
                   <p className="text-[#94A3B8]">
-                    Expected: <strong className="text-[#22C55E]">{latestFeedback.correct_answer}</strong>
+                    Expected:{' '}
+                    <strong className="text-[#22C55E]">
+                      {qFeedback?.correct_answer || existingReview?.correct_answer}
+                    </strong>
                   </p>
-                  <p className="text-[#94A3B8] leading-relaxed">{latestFeedback.explanation}</p>
+                  <p className="text-[#94A3B8] leading-relaxed">
+                    {qFeedback?.explanation || existingReview?.explanation}
+                  </p>
                 </div>
               )}
-              {latestFeedback?.thread && (
+              {qFeedback?.thread && (
                 <div className="pt-2 border-t border-slate-400/20 flex flex-wrap items-center justify-between gap-3 text-xs">
                   <span className="text-[#F59E0B] inline-flex items-center gap-1.5 font-medium">
                     <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                    Misconception flagged ({latestFeedback.thread.status}): {latestFeedback.thread.label}
+                    Misconception flagged ({qFeedback.thread.status}): {qFeedback.thread.label}
                   </span>
                   <Link to="/misconceptions" className="text-[#22D3EE] font-semibold hover:underline shrink-0">
                     Open Corrective Lesson
@@ -535,9 +612,19 @@ export function AssessmentPage() {
             </div>
           )}
 
-          {/* Action Bar */}
+          {/* Action Bar with Previous / Submit / Next / Complete */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-400/15">
-            <div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentIdx === 0}
+                onClick={() => moveToQuestion(currentIdx - 1)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#11182B] hover:bg-[#1B2740] disabled:opacity-40 border border-slate-400/20 text-xs font-medium text-[#F8FAFC] transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Previous
+              </button>
+
               {!existingAnswer && hintsUsed < q.hints_count && (
                 <button
                   type="button"
@@ -546,31 +633,37 @@ export function AssessmentPage() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#11182B] hover:bg-[#1B2740] border border-slate-400/20 text-xs font-medium text-[#F59E0B] transition-colors"
                 >
                   <HelpCircle className="w-3.5 h-3.5" />
-                  Reveal Hint ({q.hints_count - hintsUsed} left)
+                  Hint ({q.hints_count - hintsUsed})
                 </button>
               )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
-              {!existingAnswer ? (
+              {!existingAnswer && (
                 <button
                   type="button"
-                  disabled={!draftAnswer.trim() || submitAnswerMut.isPending}
+                  disabled={!currentDraft.trim() || submitAnswerMut.isPending}
                   onClick={() => submitAnswerMut.mutate(q.id)}
                   className="px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-50 text-white text-xs font-semibold transition-colors"
                 >
-                  {submitAnswerMut.isPending ? 'Checking...' : 'Submit Answer'}
+                  {submitAnswerMut.isPending ? 'Checking...' : 'Check Answer'}
                 </button>
-              ) : currentIdx < questions.length - 1 ? (
+              )}
+
+              {currentIdx < questions.length - 1 && (
                 <button
                   type="button"
                   onClick={() => moveToQuestion(currentIdx + 1)}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#22D3EE] hover:bg-[#06B6D4] text-[#0B1020] text-xs font-bold transition-colors"
+                  className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                    existingAnswer
+                      ? 'bg-[#22D3EE] hover:bg-[#06B6D4] text-[#0B1020]'
+                      : 'bg-[#11182B] hover:bg-[#1B2740] border border-slate-400/20 text-[#F8FAFC]'
+                  }`}
                 >
-                  Next Question
+                  Next
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
-              ) : null}
+              )}
 
               {allAnswered && (
                 <button
@@ -579,7 +672,7 @@ export function AssessmentPage() {
                   disabled={completeMut.isPending}
                   className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] text-[#0B1020] text-xs font-bold transition-colors"
                 >
-                  {completeMut.isPending ? 'Finalizing...' : 'Finish & Claim XP'}
+                  {completeMut.isPending ? 'Finalizing...' : 'Finish & View Results'}
                 </button>
               )}
             </div>

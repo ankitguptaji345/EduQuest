@@ -79,6 +79,8 @@ export async function runDocumentPipeline(jobId: string): Promise<void> {
     const analysis = await provider.analyzeDocument({
       documentTitle: doc.title,
       chunks,
+      units: extraction.units,
+      unsuitableReason: extraction.unsuitableReason,
     });
     const latency = Date.now() - t0;
 
@@ -88,6 +90,8 @@ export async function runDocumentPipeline(jobId: string): Promise<void> {
       summary: analysis.summary,
       learningObjectives: analysis.learningObjectives,
       examQuestions: analysis.examQuestions,
+      studyNotes: analysis.studyNotes || null,
+      analysisVersion: '2.0',
       model: analysis.model,
       promptVersion: analysis.promptVersion,
     });
@@ -139,8 +143,8 @@ export async function runDocumentPipeline(jobId: string): Promise<void> {
       status: 'succeeded',
     });
 
-    // Generate grounded Learning World from extracted topics
-    await worldService.generateWorldForDocument(userId, documentId);
+    // Generate or refresh grounded Learning World from extracted topics
+    await worldService.generateWorldForDocument(userId, documentId, { refreshOnReprocess: true });
 
     // Stage 5: Ready
     documentRepo.updateDocumentProcessing(userId, documentId, { status: 'ready' });

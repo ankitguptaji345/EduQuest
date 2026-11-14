@@ -5,6 +5,8 @@ import type { QuestionSecret, QuestionType } from '../../repositories/assessment
 import type { CauseClass } from '../../repositories/misconceptionRepo.ts';
 import type { SourceRef, TopicRow } from '../../repositories/topicRepo.ts';
 import type { TutorCitation, TutorMessageRow } from '../../repositories/tutorRepo.ts';
+import type { StructuredStudyNotes } from '../documents/cleaner.ts';
+import type { ExtractedUnit } from '../documents/extractors.ts';
 import { ruleBasedProvider } from './ruleBasedProvider.ts';
 import { geminiProvider } from './geminiProvider.ts';
 import { fakeProvider } from './fakeProvider.ts';
@@ -37,6 +39,7 @@ export interface DocumentAnalysisOutput {
   summary: string;
   learningObjectives: string[];
   examQuestions: Array<{ prompt: string; topic: string; difficulty: string }>;
+  studyNotes?: StructuredStudyNotes | null;
   topics: AnalyzedTopicDraft[];
   relations: AnalyzedRelationDraft[];
   model: string;
@@ -97,6 +100,8 @@ export interface AIProvider {
   analyzeDocument(params: {
     documentTitle: string;
     chunks: DocumentChunkRow[];
+    units?: ExtractedUnit[];
+    unsuitableReason?: string | null;
   }): Promise<DocumentAnalysisOutput>;
 
   answerTutor(params: {

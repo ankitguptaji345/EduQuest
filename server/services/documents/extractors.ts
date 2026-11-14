@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { config } from '../../core/config.ts';
+import { cleanExtractedUnits } from './cleaner.ts';
 import type { AllowedExt } from './validator.ts';
 
 export interface ExtractedUnit {
@@ -15,6 +16,7 @@ export interface ExtractionResult {
   pageCount: number;
   totalChars: number;
   ocrUsed: boolean;
+  unsuitableReason?: string | null;
 }
 
 export class DocumentExtractionError extends Error {
@@ -313,8 +315,18 @@ export async function extractDocument(
   buffer: Buffer,
   ext: AllowedExt,
 ): Promise<ExtractionResult> {
-  if (ext === 'pdf') return extractPdf(buffer);
-  if (ext === 'docx') return extractDocx(buffer);
-  if (ext === 'pptx') return extractPptx(buffer);
-  return extractTxt(buffer);
+  let rawResult: ExtractionResult;
+  if (ext === 'pdf') rawResult = await extractPdf(buffer);
+  else if (ext === 'docx') rawResult = await extractDocx(buffer);
+  else if (ext === 'pptx') rawResult = await extractPptx(buffer);
+  else rawResult = await extractTxt(buffer);
+
+  const cleaned = cleanExtractedUnits(rawResult.units);
+  return {
+    units: cleaned.units,
+    pageCount: rawResult.pageCount,
+    totalChars: cleaned.units.reduce((s, u) => s + u.text.length, 0),
+    ocrUsed: rawResult.ocrUsed,
+    unsuitableReason: cleaned.unsuitableReason,
+  };
 }

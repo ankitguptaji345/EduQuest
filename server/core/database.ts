@@ -149,6 +149,7 @@ function runMigrations(db: DatabaseSync): void {
       summary TEXT NOT NULL,
       learning_objectives TEXT NOT NULL DEFAULT '[]',
       exam_questions TEXT NOT NULL DEFAULT '[]',
+      study_notes TEXT NULL,
       analysis_version TEXT NOT NULL DEFAULT '1.0',
       model TEXT NOT NULL,
       prompt_version TEXT NOT NULL DEFAULT 'rule-based-v1',
@@ -473,6 +474,13 @@ function runMigrations(db: DatabaseSync): void {
       PRIMARY KEY(user_id, key)
     );
   `);
+
+  const analysisCols = db
+    .prepare(`PRAGMA table_info(document_analyses)`)
+    .all() as Array<{ name: string }>;
+  if (!analysisCols.some((c) => c.name === 'study_notes')) {
+    db.exec(`ALTER TABLE document_analyses ADD COLUMN study_notes TEXT NULL;`);
+  }
 }
 
 function seedAchievements(db: DatabaseSync): void {

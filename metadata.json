@@ -2,5 +2,7 @@
   "name": "EduQuest AI",
   "description": "Your AI Teacher. Your Learning World. Your Adventure. Personalized, misconception-aware gamified learning platform built from your own study materials.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

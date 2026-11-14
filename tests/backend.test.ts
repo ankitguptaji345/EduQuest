@@ -391,4 +391,147 @@ describe('EduQuest AI Backend E2E Integration', () => {
     expect(analyticsAfterDelete.data.summary.resolved_misconceptions).toBeGreaterThanOrEqual(1);
     expect(analyticsAfterDelete.data.topic_mastery.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('filters administrative cover templates, builds structured practical study notes, and validates 4-option MCQs', async () => {
+    const reg = await reqJson<{ access_token: string }>('/api/auth/register', {
+      method: 'POST',
+      body: { email: 'matlab@edu.test', password: 'password123', full_name: 'Lab Student' },
+    });
+    expect(reg.status).toBe(201);
+    const token = reg.data.access_token;
+
+    // 1. Admin-only form document should mark unsuitable and never generate admin quiz questions
+    const adminOnly = [
+      'BCS-305 | IT Workshop (Scilab/MATLAB) Laboratory',
+      'COMPLETE PRACTICAL RECORD (EXPERIMENTS 1 - 12)',
+      'Name of Student: ________________________________',
+      'Roll No.: __________________ Semester: ____________',
+      'Department: ______________________________________',
+      'Academic Session: ________________________________',
+      'Institution: _____________________________________',
+    ].join('\n');
+
+    const adminForm = new FormData();
+    adminForm.append('file', new Blob([adminOnly], { type: 'text/plain' }), 'cover-only.txt');
+    const adminUp = await reqJson<{ document: { id: string } }>('/api/documents/upload', {
+      method: 'POST',
+      token,
+      body: adminForm,
+    });
+    expect(adminUp.status).toBe(202);
+    expect(await waitForDocReady(adminUp.data.document.id, token)).toBe('ready');
+
+    const adminDetail = await reqJson<{
+      topics: unknown[];
+      analysis: { study_notes: { unsuitable_reason: string | null } };
+    }>(`/api/documents/${adminUp.data.document.id}`, { token });
+    expect(adminDetail.data.topics.length).toBe(0);
+    expect(adminDetail.data.analysis.study_notes.unsuitable_reason).toBeTruthy();
+
+    const adminQuizAttempt = await reqJson('/api/assessments', {
+      method: 'POST',
+      token,
+      body: { kind: 'diagnostic', document_id: adminUp.data.document.id, question_count: 5 },
+    });
+    expect(adminQuizAttempt.status).toBe(422);
+
+    // 2. Practical lab material with admin header noise + genuine experiments & commands
+    const practicalDoc = [
+      'BCS-305 | IT Workshop (Scilab/MATLAB) Laboratory',
+      'Name of Student: ________________________________',
+      'Roll No.: __________________',
+      '',
+      'EXPERIMENT 1: INTRODUCTION TO MATLAB',
+      'AIM: To study the MATLAB Desktop, Command Window, Workspace and semicolon output suppression.',
+      'Theory / Introduction: MATLAB is a numerical computing environment. An unassigned expression result is stored in MATLAB default variable ans.',
+      '1.1 Use of Semicolon (;)',
+      'Theory: A semicolon suppresses display of a statement result.',
+      'MATLAB Program:',
+      'clc; clear;',
+      'x=10',
+      'y=20;',
+      'Sample Output:',
+      'x = 10',
+      'RESULT: Basic commands and semicolon suppression were verified.',
+      '',
+      'EXPERIMENT 2: CONVOLUTION AND MATRIX OPERATORS',
+      'AIM: To implement linear convolution using conv() and element-wise multiplication using .*.',
+      'Theory / Introduction: For finite sequences of lengths L and M, output length of conv(x,h) is L+M-1. The operator .* multiplies corresponding elements of equal-sized arrays.',
+      '2.1 Linear Convolution Using conv()',
+      'Theory: conv(x,h) calculates linear convolution of two sequences.',
+      'MATLAB Program:',
+      'x=[1 2 3]; h=[1 1 1];',
+      'y=conv(x,h);',
+      'Sample Output:',
+      '1 3 6 5 3',
+      'RESULT: Convolution and element-wise multiplication executed cleanly.',
+      '',
+      'IMPORTANT MATLAB COMMANDS',
+      'clc Clears Command Window.',
+      'clear Removes Workspace variables.',
+      'conv() Calculates linear convolution.',
+      'plot() Creates a 2-D plot.',
+      'stem() Creates a discrete-time plot.',
+      'SUGGESTED VIVA QUESTIONS',
+      '1. What is the difference between * and .*?',
+      '2. What is the use of semicolon (;) in MATLAB?',
+    ].join('\n');
+
+    const labForm = new FormData();
+    labForm.append('file', new Blob([practicalDoc], { type: 'text/plain' }), 'matlab-lab.txt');
+    labForm.append('title', 'MATLAB Practical Guide');
+    const labUp = await reqJson<{ document: { id: string } }>('/api/documents/upload', {
+      method: 'POST',
+      token,
+      body: labForm,
+    });
+    expect(labUp.status).toBe(202);
+    expect(await waitForDocReady(labUp.data.document.id, token)).toBe('ready');
+
+    const labDetail = await reqJson<{
+      topics: Array<{ name: string; kind: string }>;
+      analysis: {
+        summary: string;
+        study_notes: {
+          kind: string;
+          practical_experiments: Array<{ title: string }>;
+          commands_reference: Array<{ command: string; purpose: string }>;
+          viva_questions: string[];
+        };
+      };
+    }>(`/api/documents/${labUp.data.document.id}`, { token });
+
+    expect(labDetail.data.analysis.study_notes.kind).toBe('practical');
+    expect(labDetail.data.analysis.study_notes.practical_experiments.length).toBeGreaterThanOrEqual(2);
+    expect(labDetail.data.analysis.study_notes.commands_reference.length).toBeGreaterThanOrEqual(4);
+    expect(labDetail.data.analysis.study_notes.viva_questions.length).toBeGreaterThanOrEqual(2);
+    for (const t of labDetail.data.topics) {
+      expect(t.name).not.toMatch(/Name of Student|Roll No|Institution|BCS-305/i);
+    }
+
+    const labQuiz = await reqJson<{
+      assessment: { id: string };
+      questions: Array<{ id: string; type: string; prompt: string; options: string[] }>;
+    }>('/api/assessments', {
+      method: 'POST',
+      token,
+      body: { kind: 'diagnostic', document_id: labUp.data.document.id, question_count: 6 },
+    });
+    expect(labQuiz.status).toBe(201);
+    expect(labQuiz.data.questions.length).toBeGreaterThanOrEqual(4);
+
+    for (const q of labQuiz.data.questions) {
+      expect(q.prompt).not.toMatch(/Name of Student|Roll No|Institution|___/);
+      if (q.type === 'mcq') {
+        expect(q.options.length).toBe(4);
+        const uniqueOpts = new Set(q.options.map((o) => o.trim().toLowerCase()));
+        expect(uniqueOpts.size).toBe(4);
+        for (const opt of q.options) {
+          expect(opt.trim().length).toBeGreaterThan(0);
+          expect(opt.length).toBeLessThanOrEqual(165);
+          expect(opt).not.toMatch(/___/);
+        }
+      }
+    }
+  });
 });

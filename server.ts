@@ -42,9 +42,36 @@ export function createApp() {
   return app;
 }
 
+async function upgradeStaleDocuments() {
+  const db = getDb();
+  const staleDocs = db
+    .prepare(
+      `SELECT d.id, d.user_id
+       FROM documents d
+       LEFT JOIN document_analyses da ON da.document_id = d.id
+       WHERE d.status = 'ready'
+         AND (da.document_id IS NULL OR da.analysis_version != '2.0' OR da.study_notes IS NULL)`,
+    )
+    .all() as Array<{ id: string; user_id: string }>;
+
+  if (staleDocs.length === 0) return;
+
+  const { documentRepo } = await import('./server/repositories/documentRepo.ts');
+  for (const row of staleDocs) {
+    const existingActive = documentRepo.getLatestJobForDocument(row.user_id, row.id);
+    if (!existingActive || (existingActive.status !== 'queued' && existingActive.status !== 'running')) {
+      documentRepo.createReprocessJob(row.user_id, row.id, 'queued');
+    }
+  }
+  setImmediate(() => {
+    void jobWorker.tick();
+  });
+}
+
 async function bootstrap() {
   getDb();
   jobWorker.start();
+  await upgradeStaleDocuments();
 
   const app = createApp();
 
